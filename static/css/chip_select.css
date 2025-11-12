@@ -1,0 +1,53 @@
+/* Modern chip multi-select styling */
+.chip-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: text;
+  min-height: 44px;
+  transition: 0.2s ease;
+}
+
+.chip-select:focus-within {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+}
+
+.chip {
+  background: #007bff;
+  color: #fff;
+  border-radius: 14px;
+  padding: 4px 10px;
+  margin: 3px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+
+.chip button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-weight: bold;
+  margin-left: 5px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.chip-select select {
+  border: none;
+  outline: none;
+  flex-grow: 1;
+  padding: 6px;
+  font-size: 14px;
+  background: transparent;
+  min-width: 160px;
+}
+
+.chip-select select option {
+  padding: 8px;
+}

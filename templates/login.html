@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login — Student Career Predictor</title>
+  <style>
+    :root{ --bg:#f6f7f9; --card:#fff; --accent:#007cf0; --muted:#6b6b6b; --button:#23272b; --accent-link:#6a2fbf; }
+    *{box-sizing:border-box}
+    body{ margin:0; font-family: "Helvetica Neue", Arial, sans-serif; background:var(--bg); color:#222; display:flex; justify-content:center; padding:40px 16px; }
+    .wrap{ width:100%; max-width:520px; }
+    a.home { color:var(--accent-link); text-decoration: none; display:inline-block; margin-bottom:12px; font-size:14px; }
+    .card{ background:var(--card); border-radius:10px; padding:22px; box-shadow: 0 14px 40px rgba(3,12,22,0.08); }
+    h1 { margin:0 0 4px; font-size:26px; display:flex; align-items:center; gap:10px; }
+    .input { width:100%; padding:12px; margin:10px 0; border-radius:6px; border:1px solid #e6e6e6; font-size:15px; }
+    .submit { width:100%; padding:12px; border-radius:6px; border:none; background:var(--button); color:#fff; font-weight:700; cursor:pointer; margin-top:8px; }
+    .forgot { display:block; text-align:center; margin-top:10px; color:var(--accent-link); text-decoration:underline; font-size:13px; }
+    .switch { text-align:center; margin-top:12px; color:var(--muted); font-size:14px; }
+    .alert-success { background: #e9fff2; border: 1px solid #cfeedd; color: #0b7a43; padding:10px 12px; border-radius:6px; margin-bottom:10px; font-weight:600; }
+    .alert-error { background:#fff0f0; border:1px solid #f1c2c2; color:#b00020; padding:10px 12px; border-radius:6px; margin-bottom:10px; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="home" href="{{ url_for('home') }}">← Home</a>
+    <div class="card">
+      <h1><span style="font-size:20px">🔒</span> Log in</h1>
+
+      {% if registered %}
+        <div class="alert-success">Signup successful — please log in with your credentials.</div>
+      {% endif %}
+      {% if error %}
+        <div class="alert-error">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('login') }}" autocomplete="off">
+        <label style="display:block; margin-top:10px; font-weight:600;">Username</label>
+        <input name="username" class="input" type="text" placeholder="Email or Username" required />
+        <label style="display:block; margin-top:8px; font-weight:600;">Password</label>
+        <input name="password" class="input" type="password" placeholder="Password" required />
+        <button class="submit" type="submit">Log in</button>
+      </form>
+
+      <a class="forgot" href="#">Forgot Password?</a>
+      <div class="switch">Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a></div>
+    </div>
+  </div>
+</body>
+</html>

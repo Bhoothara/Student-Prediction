@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Career Predictor</title>
+  <style>
+    :root{ --nav-bg:#26272b; --accent:#007cf0; --accent-2:#00dfd8; --btn-teal:#4fd1c5; --card-bg:#ffffff; --muted:#6b6b6b; --dark-btn:#23272b; }
+    *{box-sizing:border-box}
+    body{ margin:0; font-family: "Helvetica Neue", Arial, sans-serif; background:#f6f7f9; color:#222; }
+    .nav { background: var(--nav-bg); color: white; display:flex; align-items:center; justify-content:space-between; padding:14px 28px; position:sticky; top:0; z-index:1000; }
+    .nav .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; }
+    .nav .actions { display:flex; align-items:center; gap:12px; }
+    .nav .actions .btn { background: var(--btn-teal); color: #062525; border-radius:8px; padding:8px 14px; font-weight:700; text-decoration:none; cursor:pointer; border:none; }
+
+    .hero { background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%); color: white; text-align:center; padding:72px 20px; }
+    .hero h1 { font-size:38px; margin:0 0 12px; font-weight:800; }
+    .hero p { max-width:950px; margin:0 auto; font-size:16px; color:rgba(255,255,255,0.95); line-height:1.6; }
+
+    .features { display:flex; gap:28px; justify-content:space-between; padding:40px 60px; align-items:flex-start; background:#f6f7f9; }
+    .feature-card{ background:var(--card-bg); border-radius:12px; width:320px; padding:22px; box-shadow: 0 10px 30px rgba(20,20,20,0.06); }
+    .feature-card h3{ margin:0 0 8px; color:var(--accent); font-size:18px; }
+    .feature-card p{ margin:0; color:var(--muted); line-height:1.5; font-size:14px; }
+
+    @media (max-width:1000px){ .features{ flex-direction:column; padding:24px; gap:18px; } .feature-card{ width:100%; } .hero { padding:48px 18px; } }
+
+    /* Modal styles */
+    .modal-backdrop { position: fixed; inset: 0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.45); z-index:2000; padding:20px; }
+    .modal { width:420px; max-width:100%; background: #fff; border-radius:10px; padding:18px 20px 22px 20px; box-shadow:0 12px 40px rgba(3,12,22,0.3); position:relative; }
+    .modal .close { position:absolute; right:12px; top:8px; font-size:22px; cursor:pointer; color:#333; }
+    .modal h2 { margin:12px 0 12px; font-size:22px; display:flex; align-items:center; gap:10px; }
+    .modal input[type="text"], .modal input[type="email"], .modal input[type="password"] { width:100%; padding:12px 12px; margin:10px 0; border-radius:6px; border:1px solid #e6e6e6; font-size:14px; }
+    .modal .submit { width:100%; padding:12px; border-radius:6px; border:none; background:var(--dark-btn); color:white; font-weight:700; cursor:pointer; margin-top:8px; }
+    .modal .forgot { display:block; text-align:center; margin-top:10px; color:#6a2fbf; text-decoration:underline; font-size:13px; }
+    .modal .switch { text-align:center; margin-top:12px; color:var(--muted); font-size:14px; }
+    .modal .switch a { color:#1565d8; text-decoration:underline; }
+    .msg-success{ background:#e9fff2; border:1px solid #cfeedd; color:#0b7a43; padding:10px; border-radius:6px; margin-bottom:8px; font-weight:600; }
+    .msg-error{ background:#fff0f0; border:1px solid #f1c2c2; color:#b00020; padding:10px; border-radius:6px; margin-bottom:8px; font-weight:700; }
+
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <div class="brand"><span style="font-size:20px">🎓</span><div>Career Predictor</div></div>
+    <div class="actions">
+      {% if user %}
+        <div style="color:#cfeff0; margin-right:10px;">Hello, {{ user.username }}</div>
+        <a class="btn" href="{{ url_for('logout') }}">Logout</a>
+      {% else %}
+        <button id="openLogin" class="btn">Login</button>
+        <button id="openSignup" class="btn">Signup</button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>Student Career Predictor</h1>
+    <p>Use educational data to accurately predict your career path based on your academic background, skills, and preferences.</p>
+  </div>
+
+  <div class="features">
+    <div class="feature-card"><h3>📄 Fill Career Form</h3><p>Enter your academic details, CGPA, skills, goals, and preferences for precise prediction.</p></div>
+    <div class="feature-card"><h3>💡 Analyze Skills</h3><p>Discover how your programming, communication, and technical skills impact your career possibilities.</p></div>
+    <div class="feature-card"><h3>🚀 Get Predictions</h3><p>Instantly get career suggestions like Software Engineer, Data Analyst, or Researcher based on your input.</p></div>
+  </div>
+
+  <!-- LOGIN Modal -->
+  <div id="loginModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-labelledby="loginTitle">
+      <div class="close" id="closeLogin">✕</div>
+      <h2 id="loginTitle"><span class="emoji">🔒</span> Login</h2>
+
+      <div id="loginRegisteredMsg" class="msg-success" style="display:none;">Signup successful — please log in with your credentials.</div>
+      <div id="loginErrorMsg" class="msg-error" style="display:none;"></div>
+
+      <form method="post" action="{{ url_for('login') }}">
+        <input name="username" type="text" placeholder="Email or Username" required />
+        <input name="password" type="password" placeholder="Password" required />
+        <button class="submit" type="submit">Login</button>
+      </form>
+
+      <a class="forgot" href="#">Forgot Password?</a>
+      <div class="switch">Don't have an account? <a href="#" id="openSignupFromLogin">Signup</a></div>
+    </div>
+  </div>
+
+  <!-- SIGNUP Modal -->
+  <div id="signupModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-labelledby="signupTitle">
+      <div class="close" id="closeSignup">✕</div>
+      <h2 id="signupTitle"><span class="emoji">📝</span> Signup</h2>
+
+      <div id="signupErrorMsg" class="msg-error" style="display:none;"></div>
+
+      <form method="post" action="{{ url_for('signup') }}">
+        <input name="username" type="text" placeholder="Full Name / Username" required />
+        <input name="email" type="email" placeholder="Email" required />
+        <input name="password" type="password" placeholder="Password" required />
+        <button class="submit" type="submit">Signup</button>
+      </form>
+
+      <div class="switch">Already have an account? <a href="#" id="openLoginFromSignup">Login</a></div>
+    </div>
+  </div>
+
+  <script>
+    const loginModal = document.getElementById('loginModal');
+    const signupModal = document.getElementById('signupModal');
+
+    const openLoginBtn = document.getElementById('openLogin');
+    const openSignupBtn = document.getElementById('openSignup');
+    const closeLoginBtn = document.getElementById('closeLogin');
+    const closeSignupBtn = document.getElementById('closeSignup');
+
+    const openSignupFromLogin = document.getElementById('openSignupFromLogin');
+    const openLoginFromSignup = document.getElementById('openLoginFromSignup');
+
+    const loginErrorEl = document.getElementById('loginErrorMsg');
+    const signupErrorEl = document.getElementById('signupErrorMsg');
+    const loginRegisteredEl = document.getElementById('loginRegisteredMsg');
+
+    function showLoginModal() { loginModal.style.display = 'flex'; loginModal.setAttribute('aria-hidden','false'); }
+    function showSignupModal() { signupModal.style.display = 'flex'; signupModal.setAttribute('aria-hidden','false'); }
+    function closeLoginModal() { loginModal.style.display = 'none'; loginModal.setAttribute('aria-hidden','true'); }
+    function closeSignupModal() { signupModal.style.display = 'none'; signupModal.setAttribute('aria-hidden','true'); }
+
+    openLoginBtn?.addEventListener('click', (e)=>{ e.preventDefault(); showLoginModal(); });
+    openSignupBtn?.addEventListener('click', (e)=>{ e.preventDefault(); showSignupModal(); });
+    closeLoginBtn?.addEventListener('click', closeLoginModal);
+    closeSignupBtn?.addEventListener('click', closeSignupModal);
+
+    openSignupFromLogin?.addEventListener('click', (e)=>{ e.preventDefault(); closeLoginModal(); showSignupModal(); });
+    openLoginFromSignup?.addEventListener('click', (e)=>{ e.preventDefault(); closeSignupModal(); showLoginModal(); });
+
+    [loginModal, signupModal].forEach(modal => {
+      modal?.addEventListener('click', (ev) => { if (ev.target === modal) modal.style.display='none'; });
+    });
+
+    const SERVER_SHOW_LOGIN = {{ "true" if show_login else "false" }};
+    const SERVER_SHOW_SIGNUP = {{ "true" if show_signup else "false" }};
+    const SERVER_SIGNUP_ERROR = {{ signup_error|tojson }};
+    const SERVER_LOGIN_ERROR = {{ login_error|tojson }};
+    const SERVER_REGISTERED = {{ "true" if registered else "false" }};
+
+    if (SERVER_SHOW_SIGNUP) {
+      if (SERVER_SIGNUP_ERROR) {
+        signupErrorEl.textContent = SERVER_SIGNUP_ERROR;
+        signupErrorEl.style.display = 'block';
+      }
+      showSignupModal();
+    }
+
+    if (SERVER_SHOW_LOGIN) {
+      if (SERVER_LOGIN_ERROR) {
+        loginErrorEl.textContent = SERVER_LOGIN_ERROR;
+        loginErrorEl.style.display = 'block';
+      }
+      if (SERVER_REGISTERED) {
+        loginRegisteredEl.style.display = 'block';
+      }
+      showLoginModal();
+    }
+  </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/sw.js')
+        .then(reg => console.log('Service Worker registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+<script>
+  let deferredPrompt;
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'inline-block';
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === 'accepted') {
+      console.log('User accepted the A2HS prompt');
+    } else {
+      console.log('User dismissed the A2HS prompt');
+    }
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  });
+
+  // Optional: hide install button if already installed
+  window.addEventListener('appinstalled', () => {
+    console.log('PWA installed');
+    installBtn.style.display = 'none';
+  });
+
+  // register service worker if not done yet
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+
+
+</body>
+</html>
