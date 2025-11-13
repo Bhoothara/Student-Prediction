@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, redirect, url_for, request, jsonify
+from flask import Flask, render_template, send_from_directory, session, redirect, url_for, request, jsonify
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 import os, json, datetime
@@ -466,7 +466,16 @@ def export_csv():
 def offline():
     return render_template('offline.html')
 
-
+@app.route("/.well-known/assetlinks.json")
+def serve_assetlinks():
+    folder = os.path.join(app.root_path, "static", ".well-known")
+    # safety: avoid directory-traversal, ensure file exists
+    file_path = os.path.join(folder, "assetlinks.json")
+    if not os.path.exists(file_path):
+        # return 404 if missing so we can see it in logs / browser
+        from flask import abort
+        abort(404)
+    return send_from_directory(folder, "assetlinks.json", mimetype="application/json")
 # Run
 if __name__ == "__main__":
     app.run(debug=True)
