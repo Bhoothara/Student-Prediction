@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Student Predictor</string>
+    <string name="title_activity_main">Student Predictor</string>
+    <string name="package_name">com.bhoothara.studentpredictor</string>
+    <string name="custom_url_scheme">com.bhoothara.studentpredictor</string>
+</resources>
