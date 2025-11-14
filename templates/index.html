@@ -337,16 +337,7 @@
     document.getElementById('speakOutput').value = document.getElementById('speak').value;
     
   </script>
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/static/sw.js')
-        .then(reg => console.log('Service Worker registered:', reg.scope))
-        .catch(err => console.log('SW registration failed:', err));
-    });
-  }
-</script>
-
+  
 
   
   <script src="{{ url_for('static', filename='js/chip_select.js') }}"></script>

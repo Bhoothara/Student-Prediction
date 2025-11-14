@@ -1,0 +1,6 @@
+﻿{
+  "appId": "com.bhoothara.studentcareer",
+  "appName": "StudentCareer",
+  "webDir": "build",
+  "bundledWebRuntime": false
+}

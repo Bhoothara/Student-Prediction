@@ -1,0 +1,9 @@
+{
+  "appId": "com.bhoothara.studentpredictor",
+  "appName": "Student Predictor",
+  "webDir": "www",
+  "server": {
+    "url": "https://student-career-predictor.onrender.com",
+    "cleartext": true
+  }
+}

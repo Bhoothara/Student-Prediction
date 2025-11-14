@@ -476,6 +476,11 @@ def serve_assetlinks():
         from flask import abort
         abort(404)
     return send_from_directory(folder, "assetlinks.json", mimetype="application/json")
+
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory('static', 'manifest.json', mimetype='application/json')
+
 # Run
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,20 +1,10 @@
-# save as create_icons.py then run: python create_icons.py
+# save as make_icons.py and run: python make_icons.py
 from PIL import Image
+
+sizes = [(1024, 'icon-1024.png'), (512, 'icon-512.png'), (192, 'icon-192.png')]
 import os
-
-src = 'static/icons/source_icon.png'   # put your original square PNG here (any size)
-out_dir = 'static/icons'
-os.makedirs(out_dir, exist_ok=True)
-
-if not os.path.exists(src):
-    raise SystemExit("Put your original square PNG at static/icons/source_icon.png and re-run.")
-
-img = Image.open(src).convert('RGBA')
-
-sizes = [(192, 'icon-192.png'), (512, 'icon-512.png'), (1024, 'icon-1024.png')]
+os.makedirs('static/icons', exist_ok=True)
 for size, name in sizes:
-    im = img.copy()
-    im = im.resize((size, size), Image.LANCZOS)
-    out = os.path.join(out_dir, name)
-    im.save(out, format='PNG')
-    print("Saved", out)
+    im = Image.new('RGBA', (size[0], size[0]), (0,124,240,255))  # blue bg
+    im.save(os.path.join('static','icons', name))
+print("icons created in static/icons")

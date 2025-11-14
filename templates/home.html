@@ -3,6 +3,7 @@
 <head>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 
+   <meta name="theme-color" content="#0a74da">
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -39,6 +40,60 @@
     .modal .switch a { color:#1565d8; text-decoration:underline; }
     .msg-success{ background:#e9fff2; border:1px solid #cfeedd; color:#0b7a43; padding:10px; border-radius:6px; margin-bottom:8px; font-weight:600; }
     .msg-error{ background:#fff0f0; border:1px solid #f1c2c2; color:#b00020; padding:10px; border-radius:6px; margin-bottom:8px; font-weight:700; }
+/* Nav / auth buttons alignment fix — paste at end of <style> */
+.nav {
+  display: flex;           /* already set, but keep as flex */
+  align-items: center;     /* vertical center everything */
+  justify-content: space-between;
+  height: 64px;            /* fixed navbar height to avoid reflow */
+  padding: 0 24px;         /* keep spacing consistent */
+}
+
+.nav .brand {             /* ensure brand content vertically centered */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+}
+
+.nav .brand > div {
+  line-height: 1;         /* prevents inline-block shift */
+  display: block;
+}
+
+/* Actions container */
+.nav .actions {
+  display: flex;
+  align-items: center;    /* vertical center the buttons */
+  gap: 10px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Buttons: make a fixed height & center text */
+.nav .actions .btn,
+.nav .actions button,
+.nav .actions a.btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 40px !important;      /* consistent button height */
+  padding: 0 14px !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
+  box-sizing: border-box;
+}
+
+/* Prevent modals or other rules from accidentally moving the nav */
+.nav * { box-sizing: border-box; }
+
+/* Mobile tweak: allow wrapping but keep buttons at right */
+@media (max-width:600px) {
+  .nav { height: auto; padding: 10px 16px; flex-wrap: wrap; }
+  .nav .actions { width: 100%; justify-content: flex-end; margin-top:8px; }
+}
 
   </style>
 </head>
