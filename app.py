@@ -1,3 +1,4 @@
+# app.py (patched)
 from flask import Flask, render_template, send_from_directory, session, redirect, url_for, request, jsonify
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,89 +10,120 @@ import csv
 
 # ---------- Configuration ----------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "users.db")
+# Use a local 'data' folder to avoid OneDrive locking issues
+DB_DIR = os.path.join(BASE_DIR, "data")
+DB_PATH = os.path.join(DB_DIR, "users.db")
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = "dev-secret-change-this"  # change for production
 
+# ---------- SQLite helper (single place to configure) ----------
+def get_conn():
+    """
+    Always use this to get a sqlite3 connection.
+    - timeout: wait up to 30s for locks to clear instead of failing immediately
+    - check_same_thread=False: allow usage across threads (dev server may spawn threads)
+    - enable WAL/journal PRAGMAs for better concurrency
+    """
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
+    try:
+        # set PRAGMAs for reduced locking
+        cur = conn.cursor()
+        try:
+            cur.execute("PRAGMA journal_mode=WAL;")
+            cur.execute("PRAGMA synchronous=NORMAL;")
+        except Exception:
+            # if PRAGMA fails, ignore (not fatal)
+            pass
+        finally:
+            cur.close()
+    except Exception:
+        # ignore any PRAGMA errors but keep connection
+        pass
+    return conn
+
 # ---------- Helper: DB initialization ----------
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    # users table (existing)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
-        );
-    ''')
-    # predictions table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS predictions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NULL,
-            input_json TEXT NOT NULL,
-            predicted_role TEXT,
-            confidence REAL,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        );
-    ''')
-    conn.commit()
-    conn.close()
+    # ensure folder exists
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
+    conn = get_conn()
+    try:
+        c = conn.cursor()
+        # create tables if they don't exist
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL
+            );
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NULL,
+                input_json TEXT NOT NULL,
+                predicted_role TEXT,
+                confidence REAL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+        ''')
+        conn.commit()
+    finally:
+        conn.close()
 
 # Call init on startup
 init_db()
 
-# ---------- Helper: DB actions ----------
+# ---------- Helper: DB actions (use get_conn) ----------
 def create_user(username, email, password):
     pw_hash = generate_password_hash(password)
     try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
-                  (username, email, pw_hash))
-        conn.commit()
-        conn.close()
+        with get_conn() as conn:
+            c = conn.cursor()
+            c.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+                      (username, email, pw_hash))
+            conn.commit()
         return True, None
     except sqlite3.IntegrityError as e:
+        # return DB constraint error (username/email duplicate)
+        return False, str(e)
+    except Exception as e:
+        print("create_user error:", e)
         return False, str(e)
 
 def get_user_by_username(username_or_email):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, username, email, password_hash FROM users WHERE username = ? OR email = ?", (username_or_email, username_or_email))
-    row = c.fetchone()
-    conn.close()
+    with get_conn() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, username, email, password_hash FROM users WHERE username = ? OR email = ?",
+                  (username_or_email, username_or_email))
+        row = c.fetchone()
     return row
 
 def save_prediction(user_id, input_obj, predicted_role, confidence=None):
-    """Save a prediction row to DB. input_obj should be a JSON-serializable dict."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
     created_at = datetime.datetime.utcnow().isoformat() + "Z"
     try:
-        c.execute(
-            "INSERT INTO predictions (user_id, input_json, predicted_role, confidence, created_at) VALUES (?, ?, ?, ?, ?)",
-            (user_id, json.dumps(input_obj, ensure_ascii=False), predicted_role, confidence, created_at)
-        )
-        conn.commit()
+        with get_conn() as conn:
+            c = conn.cursor()
+            c.execute(
+                "INSERT INTO predictions (user_id, input_json, predicted_role, confidence, created_at) VALUES (?, ?, ?, ?, ?)",
+                (user_id, json.dumps(input_obj, ensure_ascii=False), predicted_role, confidence, created_at)
+            )
+            conn.commit()
     except Exception as e:
-        # log to console; don't crash the request
         print("Failed to save prediction:", e)
-    finally:
-        conn.close()
 
 def get_user_predictions(user_id, limit=200):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, input_json, predicted_role, confidence, created_at FROM predictions WHERE user_id = ? ORDER BY id DESC LIMIT ?", (user_id, limit))
-    rows = c.fetchall()
-    conn.close()
-    # convert json field into dict for template
     items = []
+    with get_conn() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, input_json, predicted_role, confidence, created_at FROM predictions WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+                  (user_id, limit))
+        rows = c.fetchall()
+
     for r in rows:
         _id, input_json, predicted_role, confidence, created_at = r
         try:
@@ -270,9 +302,10 @@ def login():
 
     session["user"] = {"id": uid, "username": uname, "email": email}
     if uname.lower() == "admin":
-     return redirect(url_for("admin"))
+        return redirect(url_for("admin"))
     else:
-     return redirect(url_for("index"))
+        return redirect(url_for("index"))
+
 # Logout
 @app.route("/logout")
 def logout():
@@ -396,17 +429,16 @@ def admin():
         return redirect(url_for("home"))
 
     # fetch all predictions (join with users for username/email)
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-      SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json
-      FROM predictions p
-      LEFT JOIN users u ON u.id = p.user_id
-      ORDER BY p.id DESC
-      LIMIT 1000
-    """)
-    rows = c.fetchall()
-    conn.close()
+    with get_conn() as conn:
+        c = conn.cursor()
+        c.execute("""
+          SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json
+          FROM predictions p
+          LEFT JOIN users u ON u.id = p.user_id
+          ORDER BY p.id DESC
+          LIMIT 1000
+        """)
+        rows = c.fetchall()
 
     items = []
     for r in rows:
@@ -438,14 +470,13 @@ def export_csv():
 
     # optional filter by user_id
     uid = request.args.get("user_id")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    if uid:
-        c.execute("SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json FROM predictions p LEFT JOIN users u ON u.id = p.user_id WHERE p.user_id = ? ORDER BY p.id DESC", (uid,))
-    else:
-        c.execute("SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json FROM predictions p LEFT JOIN users u ON u.id = p.user_id ORDER BY p.id DESC")
-    rows = c.fetchall()
-    conn.close()
+    with get_conn() as conn:
+        c = conn.cursor()
+        if uid:
+            c.execute("SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json FROM predictions p LEFT JOIN users u ON u.id = p.user_id WHERE p.user_id = ? ORDER BY p.id DESC", (uid,))
+        else:
+            c.execute("SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json FROM predictions p LEFT JOIN users u ON u.id = p.user_id ORDER BY p.id DESC")
+        rows = c.fetchall()
 
     # build CSV
     output = StringIO()
@@ -472,15 +503,13 @@ def serve_assetlinks():
     # safety: avoid directory-traversal, ensure file exists
     file_path = os.path.join(folder, "assetlinks.json")
     if not os.path.exists(file_path):
-        # return 404 if missing so we can see it in logs / browser
         from flask import abort
         abort(404)
     return send_from_directory(folder, "assetlinks.json", mimetype="application/json")
 
-@app.route('/manifest.json')
-def serve_manifest():
-    return send_from_directory('static', 'manifest.json', mimetype='application/json')
-
 # Run
 if __name__ == "__main__":
-    app.run(debug=True)
+    # helpful debug output so you can confirm which DB file is used
+    print("Starting Flask app. DB_PATH =", DB_PATH)
+    # use_reloader=False prevents the spawn of a second process that can hold DB open
+    app.run(debug=True, use_reloader=False)
