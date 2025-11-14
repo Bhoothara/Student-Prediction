@@ -267,6 +267,36 @@
   }
 </script>
 
+<script>
+  // Only run when inside Capacitor native app
+  (function() {
+    try {
+      const isCapacitor = window.Capacitor !== undefined;
+      if (!isCapacitor) return;
+
+      const StatusBar = window.Capacitor.Plugins?.StatusBar;
+      // Capacitor v4+ exposes Plugins object; check defensive
+      if (StatusBar && StatusBar.setOverlaysWebView) {
+        // ensure web content is placed below the status bar (not under it)
+        StatusBar.setOverlaysWebView({ overlay: false }).catch(()=>{});
+      } else if (window.StatusBar && window.StatusBar.overlaysWebView) {
+        // fallback for some setups
+        try { window.StatusBar.overlaysWebView(false); } catch(e){}
+      }
+
+      // Optionally set the status bar color to match your nav background:
+      const navColor = getComputedStyle(document.documentElement).getPropertyValue('--nav-bg') || '#26272b';
+      const hex = navColor.trim() || '#26272b';
+      if (StatusBar && StatusBar.setBackgroundColor) {
+        // setBackgroundColor expects an object { color: "#rrggbb" }
+        StatusBar.setBackgroundColor({ color: hex }).catch(()=>{});
+      }
+    } catch(e) {
+      // ignore if plugin not available
+      console.warn('StatusBar plugin call failed', e);
+    }
+  })();
+</script>
 
 </body>
 </html>
