@@ -1,99 +1,57 @@
-# app.py (Mongo-ready, corrected)
+# app.py (patched)
 from flask import Flask, render_template, send_from_directory, session, redirect, url_for, request, jsonify
-import os
-import json
-import datetime
+import sqlite3
+from werkzeug.security import generate_password_hash, check_password_hash
+import os, json, datetime
 import joblib
 import pandas as pd
 from io import StringIO
 import csv
 
-# Mongo imports
-try:
-    from pymongo.mongo_client import MongoClient
-    from pymongo.server_api import ServerApi
-except Exception:
-    MongoClient = None
-    ServerApi = None
-
 # ---------- Configuration ----------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-
-# Local fallback SQLite DB (optional); kept for local dev if you want it
+# Use a local 'data' folder to avoid OneDrive locking issues
 DB_DIR = os.path.join(BASE_DIR, "data")
-SQLITE_DB_PATH = os.path.join(DB_DIR, "users.db")
+DB_PATH = os.path.join(DB_DIR, "users.db")
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = "dev-secret-change-this"  # change for production
 
-# ---------- MongoDB connection ----------
-MONGO_URI = os.environ.get("MONGO_URI", None)
-# Optionally you can build a URI here (not recommended to hardcode credentials)
-# Example (not recommended): "mongodb+srv://user:password@cluster0.djel7c3.mongodb.net/student_predictor?retryWrites=true&w=majority"
-
-DB = None
-client = None
-if MONGO_URI and MongoClient is not None:
+# ---------- SQLite helper (single place to configure) ----------
+def get_conn():
+    """
+    Always use this to get a sqlite3 connection.
+    - timeout: wait up to 30s for locks to clear instead of failing immediately
+    - check_same_thread=False: allow usage across threads (dev server may spawn threads)
+    - enable WAL/journal PRAGMAs for better concurrency
+    """
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
     try:
-        # Use ServerApi for modern clusters (optional)
-        client = MongoClient(MONGO_URI, server_api=ServerApi("1"))
-        # Try a ping to verify connection
-        client.admin.command("ping")
-        # Prefer default DB from URI if present, else use 'student_predictor'
-        try:
-            DB = client.get_default_database()
-            if DB is None:
-                DB = client["student_predictor"]
-        except Exception:
-            DB = client["student_predictor"]
-        print("Connected to MongoDB Atlas. DB:", DB.name if DB is not None else None)
-    except Exception as e:
-        print("MongoDB connection failed:", e)
-        DB = None
-else:
-    if MONGO_URI is None:
-        print("MONGO_URI not set — running without MongoDB (DB will be None).")
-    else:
-        print("pymongo not installed; Mongo support disabled.")
-    DB = None
-
-# Collections (safe setup)
-users_coll = DB.users if DB is not None else None
-preds_coll = DB.predictions if DB is not None else None
-
-def ensure_indexes():
-    if DB is None:
-        return
-    try:
-        users_coll.create_index("email", unique=True, background=True)
-        users_coll.create_index("username", unique=True, background=True)
-        preds_coll.create_index("user_id", background=True)
-    except Exception as e:
-        print("Index creation warning:", e)
-
-# ensure indexes on startup
-ensure_indexes()
-
-# ---------- Optional: local SQLite helper (if you want fallback) ----------
-def get_sqlite_conn():
-    import sqlite3
-    os.makedirs(os.path.dirname(SQLITE_DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(SQLITE_DB_PATH, timeout=30, check_same_thread=False)
-    # enable WAL for better concurrency
-    try:
+        # set PRAGMAs for reduced locking
         cur = conn.cursor()
-        cur.execute("PRAGMA journal_mode=WAL;")
+        try:
+            cur.execute("PRAGMA journal_mode=WAL;")
+            cur.execute("PRAGMA synchronous=NORMAL;")
+        except Exception:
+            # if PRAGMA fails, ignore (not fatal)
+            pass
+        finally:
+            cur.close()
     except Exception:
+        # ignore any PRAGMA errors but keep connection
         pass
     return conn
 
-def init_sqlite_db():
-    if DB is not None:
-        return   # using Mongo DB, skip sqlite init
-    import sqlite3
-    conn = get_sqlite_conn()
+# ---------- Helper: DB initialization ----------
+def init_db():
+    # ensure folder exists
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
+    conn = get_conn()
     try:
         c = conn.cursor()
+        # create tables if they don't exist
         c.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -109,30 +67,93 @@ def init_sqlite_db():
                 input_json TEXT NOT NULL,
                 predicted_role TEXT,
                 confidence REAL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
             );
         ''')
         conn.commit()
     finally:
         conn.close()
 
-# initialize local sqlite only if Mongo not used
-init_sqlite_db()
+# Call init on startup
+init_db()
 
-# ---------- Model loading (unchanged) ----------
+# ---------- Helper: DB actions (use get_conn) ----------
+def create_user(username, email, password):
+    pw_hash = generate_password_hash(password)
+    try:
+        with get_conn() as conn:
+            c = conn.cursor()
+            c.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+                      (username, email, pw_hash))
+            conn.commit()
+        return True, None
+    except sqlite3.IntegrityError as e:
+        # return DB constraint error (username/email duplicate)
+        return False, str(e)
+    except Exception as e:
+        print("create_user error:", e)
+        return False, str(e)
+
+def get_user_by_username(username_or_email):
+    with get_conn() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, username, email, password_hash FROM users WHERE username = ? OR email = ?",
+                  (username_or_email, username_or_email))
+        row = c.fetchone()
+    return row
+
+def save_prediction(user_id, input_obj, predicted_role, confidence=None):
+    created_at = datetime.datetime.utcnow().isoformat() + "Z"
+    try:
+        with get_conn() as conn:
+            c = conn.cursor()
+            c.execute(
+                "INSERT INTO predictions (user_id, input_json, predicted_role, confidence, created_at) VALUES (?, ?, ?, ?, ?)",
+                (user_id, json.dumps(input_obj, ensure_ascii=False), predicted_role, confidence, created_at)
+            )
+            conn.commit()
+    except Exception as e:
+        print("Failed to save prediction:", e)
+
+def get_user_predictions(user_id, limit=200):
+    items = []
+    with get_conn() as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, input_json, predicted_role, confidence, created_at FROM predictions WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+                  (user_id, limit))
+        rows = c.fetchall()
+
+    for r in rows:
+        _id, input_json, predicted_role, confidence, created_at = r
+        try:
+            inp = json.loads(input_json)
+        except Exception:
+            inp = {"raw": input_json}
+        items.append({
+            "id": _id,
+            "input": inp,
+            "predicted_role": predicted_role,
+            "confidence": confidence,
+            "created_at": created_at
+        })
+    return items
+
+# ---------- Model loading (robust) ----------
 MODEL = None
 LABEL_MAP = None
 FEATURE_COLUMNS = None
 
 def try_load_model():
     global MODEL, LABEL_MAP, FEATURE_COLUMNS
+    # look for candidate model files
     candidates = []
     try:
         for fn in os.listdir(BASE_DIR):
             if fn.lower().endswith((".pkl", ".joblib")) and ("model" in fn.lower() or "career" in fn.lower() or "prediction" in fn.lower()):
                 candidates.append(fn)
     except Exception:
-        pass
+        candidates = []
 
     if not candidates:
         print("MODEL LOAD: No candidate model files found in project root:", BASE_DIR)
@@ -158,7 +179,7 @@ def try_load_model():
             if ("label" in fn.lower() or "mapping" in fn.lower()) and fn.lower().endswith((".pkl", ".json", ".joblib")):
                 label_candidates.append(fn)
     except Exception:
-        pass
+        label_candidates = []
 
     if label_candidates:
         for lf in label_candidates:
@@ -195,118 +216,15 @@ def try_load_model():
 try_load_model()
 
 # ---------- Helpers ----------
-from werkzeug.security import generate_password_hash, check_password_hash
-
 def is_admin_user(session_user):
     try:
         return session_user and session_user.get("username") and session_user.get("username").lower() == "admin"
     except Exception:
         return False
 
-# ---------- DB action implementations (Mongo first, fallback to sqlite) ----------
-
-def create_user(username, email, password):
-    pw_hash = generate_password_hash(password)
-    if DB is not None:
-        try:
-            res = users_coll.insert_one({"username": username, "email": email, "password_hash": pw_hash})
-            return True, None
-        except Exception as e:
-            # duplicate key on unique index will raise
-            return False, str(e)
-    else:
-        # fallback to sqlite
-        try:
-            import sqlite3
-            conn = get_sqlite_conn()
-            c = conn.cursor()
-            c.execute("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)", (username, email, pw_hash))
-            conn.commit()
-            conn.close()
-            return True, None
-        except Exception as e:
-            return False, str(e)
-
-def get_user_by_username(username_or_email):
-    if DB is not None:
-        row = users_coll.find_one({"$or": [{"username": username_or_email}, {"email": username_or_email}]})
-        if not row:
-            return None
-        return (row.get("_id"), row.get("username"), row.get("email"), row.get("password_hash"))
-    else:
-        import sqlite3
-        conn = get_sqlite_conn()
-        c = conn.cursor()
-        c.execute("SELECT id, username, email, password_hash FROM users WHERE username = ? OR email = ?", (username_or_email, username_or_email))
-        row = c.fetchone()
-        conn.close()
-        return row
-
-def save_prediction(user_id, input_obj, predicted_role, confidence=None):
-    created_at = datetime.datetime.utcnow().isoformat() + "Z"
-    if DB is not None:
-        try:
-            doc = {
-                "user_id": user_id,
-                "input_json": input_obj,
-                "predicted_role": predicted_role,
-                "confidence": confidence,
-                "created_at": created_at
-            }
-            preds_coll.insert_one(doc)
-        except Exception as e:
-            print("Failed to save prediction (mongo):", e)
-    else:
-        try:
-            import sqlite3
-            conn = get_sqlite_conn()
-            c = conn.cursor()
-            c.execute("INSERT INTO predictions (user_id, input_json, predicted_role, confidence, created_at) VALUES (?, ?, ?, ?, ?)",
-                      (user_id, json.dumps(input_obj, ensure_ascii=False), predicted_role, confidence, created_at))
-            conn.commit()
-            conn.close()
-        except Exception as e:
-            print("Failed to save prediction (sqlite):", e)
-
-def get_user_predictions(user_id, limit=200):
-    items = []
-    if DB is not None:
-        try:
-            rows = list(preds_coll.find({"user_id": user_id}).sort([("_id", -1)]).limit(limit))
-            for r in rows:
-                items.append({
-                    "id": str(r.get("_id")),
-                    "input": r.get("input_json"),
-                    "predicted_role": r.get("predicted_role"),
-                    "confidence": r.get("confidence"),
-                    "created_at": r.get("created_at")
-                })
-        except Exception as e:
-            print("get_user_predictions (mongo) error:", e)
-    else:
-        import sqlite3
-        conn = get_sqlite_conn()
-        c = conn.cursor()
-        c.execute("SELECT id, input_json, predicted_role, confidence, created_at FROM predictions WHERE user_id = ? ORDER BY id DESC LIMIT ?", (user_id, limit))
-        rows = c.fetchall()
-        conn.close()
-        for r in rows:
-            _id, input_json, predicted_role, confidence, created_at = r
-            try:
-                inp = json.loads(input_json)
-            except Exception:
-                inp = {"raw": input_json}
-            items.append({
-                "id": _id,
-                "input": inp,
-                "predicted_role": predicted_role,
-                "confidence": confidence,
-                "created_at": created_at
-            })
-    return items
-
 # ---------- Routes ----------
 
+# Home: modal-aware
 @app.route("/")
 def home():
     show_login = session.pop("show_login", False)
@@ -325,10 +243,12 @@ def home():
         registered=registered
     )
 
+# Career form route
 @app.route("/career-form")
 def index():
     return render_template("index.html", user=session.get("user"))
 
+# Signup
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "GET":
@@ -353,6 +273,7 @@ def signup():
     session["show_login"] = True
     return redirect(url_for("home"))
 
+# Login
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
@@ -379,31 +300,36 @@ def login():
         session["show_login"] = True
         return redirect(url_for("home"))
 
-    session["user"] = {"id": str(uid), "username": uname, "email": email}
+    session["user"] = {"id": uid, "username": uname, "email": email}
     if uname.lower() == "admin":
         return redirect(url_for("admin"))
     else:
         return redirect(url_for("index"))
 
+# Logout
 @app.route("/logout")
 def logout():
     session.pop("user", None)
     return redirect(url_for("home"))
 
+# Predict route (saves to DB)
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.get_json() or request.form.to_dict()
+        # Save raw input even if model missing
         user = session.get("user")
         user_id = user["id"] if user else None
 
         if MODEL is None:
+            # Save the attempt with fallback message
             save_prediction(user_id, data, "Model not available (dev).", None)
             return jsonify({
                 "predicted_job_role_id": -1,
                 "predicted_job_role": "Model not available (dev)."
             }), 200
 
+        # prepare feature DataFrame if feature list exists
         if FEATURE_COLUMNS and isinstance(FEATURE_COLUMNS, list):
             row = {}
             for col in FEATURE_COLUMNS:
@@ -426,12 +352,14 @@ def predict():
                     row[k] = v
             X = pd.DataFrame([row])
 
+        # prediction
         try:
             preds = MODEL.predict(X)
         except Exception as e:
             try:
                 preds = MODEL.predict(X.values)
             except Exception as e2:
+                # save failed attempt
                 save_prediction(user_id, data, f"Prediction failed: {e}; {e2}", None)
                 return jsonify({"error": f"Model prediction failed: {e}; {e2}"}), 500
 
@@ -454,10 +382,12 @@ def predict():
             except Exception:
                 predicted_label = str(pred)
 
+        # Optional: get probability/confidence if model supports it
         confidence = None
         try:
             if hasattr(MODEL, "predict_proba"):
                 probs = MODEL.predict_proba(X)
+                # if binary/multi return max prob for predicted class
                 if len(probs.shape) == 2:
                     confidence = float(probs[0].max())
                 else:
@@ -465,6 +395,7 @@ def predict():
         except Exception:
             confidence = None
 
+        # Save prediction into DB
         save_prediction(user_id, data, predicted_label, confidence)
 
         return jsonify({
@@ -476,10 +407,12 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# History route
 @app.route("/history")
 def history():
     user = session.get("user")
     if not user:
+        # redirect to home and show login modal
         session["show_login"] = True
         return redirect(url_for("home"))
 
@@ -487,6 +420,7 @@ def history():
     items = get_user_predictions(user_id, limit=500)
     return render_template("history.html", user=user, items=items)
 
+# Admin & CSV export
 @app.route("/admin")
 def admin():
     user = session.get("user")
@@ -494,33 +428,8 @@ def admin():
         session["show_login"] = True
         return redirect(url_for("home"))
 
-    items = []
-    if DB is not None:
-        try:
-            rows = list(preds_coll.aggregate([
-                {"$lookup": {"from": "users", "localField": "user_id", "foreignField": "_id", "as": "user"}},
-                {"$sort": {"_id": -1}},
-                {"$limit": 1000}
-            ]))
-            for r in rows:
-                u = (r.get("user") or [])
-                uname = u[0].get("username") if len(u) > 0 else None
-                email = u[0].get("email") if len(u) > 0 else None
-                items.append({
-                    "id": str(r.get("_id")),
-                    "user_id": str(r.get("user_id")) if r.get("user_id") else None,
-                    "username": uname,
-                    "email": email,
-                    "predicted_role": r.get("predicted_role"),
-                    "confidence": r.get("confidence"),
-                    "created_at": r.get("created_at"),
-                    "input": r.get("input_json")
-                })
-        except Exception as e:
-            print("admin aggregation error:", e)
-    else:
-        import sqlite3
-        conn = get_sqlite_conn()
+    # fetch all predictions (join with users for username/email)
+    with get_conn() as conn:
         c = conn.cursor()
         c.execute("""
           SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json
@@ -530,67 +439,55 @@ def admin():
           LIMIT 1000
         """)
         rows = c.fetchall()
-        conn.close()
-        for r in rows:
-            pid, uid, uname, email, role, conf, created_at, input_json = r
-            try:
-                inp = json.loads(input_json)
-            except Exception:
-                inp = {"raw": input_json}
-            items.append({
-                "id": pid,
-                "user_id": uid,
-                "username": uname,
-                "email": email,
-                "predicted_role": role,
-                "confidence": conf,
-                "created_at": created_at,
-                "input": inp
-            })
+
+    items = []
+    for r in rows:
+        pid, uid, uname, email, role, conf, created_at, input_json = r
+        try:
+            inp = json.loads(input_json)
+        except Exception:
+            inp = {"raw": input_json}
+        items.append({
+            "id": pid,
+            "user_id": uid,
+            "username": uname,
+            "email": email,
+            "predicted_role": role,
+            "confidence": conf,
+            "created_at": created_at,
+            "input": inp
+        })
 
     return render_template("admin.html", user=user, items=items)
 
 @app.route("/export_csv")
 def export_csv():
+    # Only admin can export
     user = session.get("user")
     if not is_admin_user(user):
         session["show_login"] = True
         return redirect(url_for("home"))
 
-    rows = []
-    if DB is not None:
-        try:
-            cursor = preds_coll.find({}).sort([("_id", -1)])
-            for r in cursor:
-                # find user if present
-                user_doc = users_coll.find_one({"_id": r.get("user_id")}) if r.get("user_id") else None
-                rows.append([
-                    str(r.get("_id")),
-                    str(r.get("user_id")) if r.get("user_id") else "",
-                    user_doc.get("username") if user_doc else "",
-                    user_doc.get("email") if user_doc else "",
-                    r.get("predicted_role"),
-                    r.get("confidence"),
-                    r.get("created_at"),
-                    json.dumps(r.get("input_json", {}), ensure_ascii=False)
-                ])
-        except Exception as e:
-            print("export_csv (mongo) error:", e)
-    else:
-        import sqlite3
-        conn = get_sqlite_conn()
+    # optional filter by user_id
+    uid = request.args.get("user_id")
+    with get_conn() as conn:
         c = conn.cursor()
-        c.execute("SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json FROM predictions p LEFT JOIN users u ON u.id = p.user_id ORDER BY p.id DESC")
+        if uid:
+            c.execute("SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json FROM predictions p LEFT JOIN users u ON u.id = p.user_id WHERE p.user_id = ? ORDER BY p.id DESC", (uid,))
+        else:
+            c.execute("SELECT p.id, p.user_id, u.username, u.email, p.predicted_role, p.confidence, p.created_at, p.input_json FROM predictions p LEFT JOIN users u ON u.id = p.user_id ORDER BY p.id DESC")
         rows = c.fetchall()
-        conn.close()
 
+    # build CSV
     output = StringIO()
     writer = csv.writer(output)
     writer.writerow(["id", "user_id", "username", "email", "predicted_role", "confidence", "created_at", "input_json"])
     for r in rows:
         writer.writerow(r)
+
     csv_str = output.getvalue()
     output.close()
+    # return as attachment
     return (csv_str, 200, {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": "attachment; filename=predictions_export.csv"
@@ -603,13 +500,16 @@ def offline():
 @app.route("/.well-known/assetlinks.json")
 def serve_assetlinks():
     folder = os.path.join(app.root_path, "static", ".well-known")
+    # safety: avoid directory-traversal, ensure file exists
     file_path = os.path.join(folder, "assetlinks.json")
     if not os.path.exists(file_path):
         from flask import abort
         abort(404)
     return send_from_directory(folder, "assetlinks.json", mimetype="application/json")
 
+# Run
 if __name__ == "__main__":
-    print("Starting Flask app. Mongo URI (hidden) -> DB:", DB.name if DB is not None else None)
-    # use_reloader=False prevents multiple process access to DB while developing
+    # helpful debug output so you can confirm which DB file is used
+    print("Starting Flask app. DB_PATH =", DB_PATH)
+    # use_reloader=False prevents the spawn of a second process that can hold DB open
     app.run(debug=True, use_reloader=False)
