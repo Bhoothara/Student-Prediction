@@ -178,6 +178,94 @@ body {
       }
       showLoginModal();
     }
+    
   </script>
+  <!-- App-only runtime tweaks: inject app CSS and small JS behavior -->
+<script>
+(function() {
+  const isCapacitor = typeof window !== 'undefined' && !!window.Capacitor;
+  if (!isCapacitor) return; // only run in native app
+
+  // 1) Inject CSS for app-only styling (won't apply on website)
+  const css = `
+    /* App-only modal and nav tweaks */
+    body.is-app { -webkit-font-smoothing:antialiased; }
+
+    /* make top nav compact for mobile app */
+    .nav { padding: 8px 14px !important; height:64px; align-items:center; }
+    .nav .brand { font-size:18px; }
+    .nav .actions .btn { height:40px; padding:0 12px; border-radius:18px; }
+
+    /* Centered, app-style modal card */
+    .modal-backdrop { display:flex !important; align-items:center !important; justify-content:center !important; padding:20px; }
+    .modal { width: 92vw !important; max-width:520px !important; border-radius:14px !important; padding:22px !important; box-shadow: 0 16px 40px rgba(0,0,0,0.28) !important; transform:none !important; }
+    .modal h2 { font-size:22px !important; margin-bottom:6px; }
+    .modal .close { right:10px; top:8px; }
+
+    /* Make input, buttons larger for app */
+    .modal input[type="text"], .modal input[type="email"], .modal input[type="password"] {
+      padding:14px !important; font-size:15px !important; border-radius:8px !important;
+    }
+    .modal .submit { padding:12px !important; font-size:15px !important; border-radius:8px !important; }
+
+    /* Put forgot link centered and prominent */
+    .modal .forgot { display:block; text-align:center; margin-top:14px; color:#6a2fbf; }
+
+    /* Make modal backdrop visually blurred on supported devices */
+    @supports (backdrop-filter: blur(6px)) {
+      .modal-backdrop { background: rgba(0,0,0,0.35) !important; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+    }
+
+    /* Slightly elevate on app */
+    .features, .hero { transform: translateZ(0); }
+
+    /* Fine tune for very small screen heights */
+    @media (max-height:520px) {
+      .modal { max-height:90vh; overflow:auto; }
+    }
+
+    /* Optional: hide nav brand icon if statusbar overlaps */
+    .nav .brand span { display:inline-block; transform: translateY(0px); }
+  `;
+
+  const st = document.createElement('style');
+  st.id = 'app-only-style';
+  st.appendChild(document.createTextNode(css));
+  document.head.appendChild(st);
+
+  // 2) Mark body so CSS can target app-only selectors if needed
+  document.body.classList.add('is-app');
+
+  // 3) If you want login/signup to open automatically when the app starts, uncomment:
+  // showLoginModal();
+
+  // 4) Small helper: ensure clicking nav buttons shows modal (same as web)
+  const openLoginBtn = document.getElementById('openLogin');
+  const openSignupBtn = document.getElementById('openSignup');
+  // ensure they exist before wiring
+  if (openLoginBtn) openLoginBtn.addEventListener('click', e => { e.preventDefault(); showLoginModal(); });
+  if (openSignupBtn) openSignupBtn.addEventListener('click', e => { e.preventDefault(); showSignupModal(); });
+
+  // 5) Fix status bar overlap for some devices by adding top padding based on status bar (Android)
+  try {
+    // For Capacitor StatusBar plugin (if available)
+    const setPad = async () => {
+      try {
+        const Plugins = window.Capacitor.Plugins || window.Capacitor.plugin || {};
+        const StatusBar = Plugins.StatusBar || Plugins.statusBar;
+        // try to get safe area top inset if plugin provides (some platforms expose)
+        // fallback: add small top padding
+        const safeTop = 24; // default fallback
+        document.body.style.paddingTop = safeTop + 'px';
+      } catch (e) {
+        // ignore
+      }
+    };
+    setPad();
+  } catch (e) { /* ignore */ }
+
+})();
+</script>
+
 </body>
 </html>
