@@ -1,208 +1,108 @@
-/* career_form.css
-   Clean, modern, responsive styling for the Career Prediction form.
-   Designed to pair well with the predict_popup modal styling.
-*/
+/* --------------------------------------------------
+   OPTION 1: IMAGE BACKGROUND (Education Photo)
+-------------------------------------------------- */
 
-/* -- Layout & page -- */
-:root{
-  --bg:#f4f7fb;
-  --card:#ffffff;
-  --muted:#6b6b78;
-  --accent:#007cf0;
-  --accent-2:#00dfd8;
-  --primary:#0b63d8;
-  --danger:#b00020;
-  --radius:12px;
-  --shadow: 0 12px 30px rgba(15,20,30,0.06);
-  --glass: rgba(255,255,255,0.7);
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Inter", sans-serif;
+
+    /* Education background image */
+    background: url("/static/images/bg.jpeg") no-repeat center center fixed;
+    background-size: cover;
+
+    /* Add a soft white overlay for readability */
+    position: relative;
 }
 
-* { box-sizing: border-box; }
-html,body { height:100%; margin:0; font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif; background: linear-gradient(180deg, var(--bg), #eef4fb); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; color:#0f1724; }
-
-.container {
-  max-width: 1000px;
-  margin: 34px auto;
-  padding: 22px;
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.65); /* Soft fade */
+    backdrop-filter: blur(4px);
+    z-index: -1;
 }
 
-/* Card */
-.form-card {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 28px;
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(18,24,36,0.04);
-  overflow: hidden;
+/* Main container */
+.page {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
 }
 
-/* header */
-.form-card .title {
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:14px;
-}
-.form-card .title h2 {
-  margin:0;
-  font-size:22px;
-  letter-spacing:-0.2px;
-}
-.form-card .subtitle {
-  font-size:13px;
-  color:var(--muted);
-  margin-top:6px;
+/* Form Card */
+.card {
+    width: 100%;
+    max-width: 850px;
+    background: rgba(255, 255, 255, 0.90);
+    border-radius: 16px;
+    padding: 35px;
+    box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.12);
+    animation: fadeIn 0.8s ease;
 }
 
-/* grid layout for fields */
-.field-grid {
-  display:grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap:16px 20px;
-  align-items:start;
+/* Fade Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* single column fallback on small screens */
-@media (max-width:860px) {
-  .field-grid { grid-template-columns: 1fr; }
+/* Input styles */
+label {
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #203040;
 }
 
-/* individual field */
-.field {
-  display:flex;
-  flex-direction:column;
-}
-.field label {
-  font-size:13px;
-  font-weight:600;
-  color:#0b1220;
-  margin-bottom:6px;
-}
-.input, .select, .textarea {
-  width:100%;
-  padding:10px 12px;
-  border-radius:8px;
-  border:1px solid #e6eef8;
-  background: #fff;
-  font-size:14px;
-  color: #0b1220;
-  transition: box-shadow .12s, border-color .12s;
-}
-.input:focus, .select:focus, .textarea:focus {
-  outline:none;
-  border-color: rgba(7,106,255,0.9);
-  box-shadow: 0 8px 30px rgba(3,102,214,0.08);
+input, select {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: 1.5px solid #d1d9e6;
+    background: #fff;
+    font-size: 15px;
 }
 
-/* Range controls (large and neat) */
-.range-wrap { display:flex; gap:12px; align-items:center; }
-.range-wrap input[type="range"] { flex:1; appearance:none; height:6px; border-radius:6px; background: linear-gradient(90deg,var(--accent),var(--accent-2)); }
-.range-wrap output { min-width:40px; text-align:center; font-weight:700; color:#0b1220; }
-
-/* Buttons */
-.btn {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  background: linear-gradient(90deg,var(--primary),var(--accent));
-  color: #fff;
-  border:none;
-  padding:12px 16px;
-  border-radius:10px;
-  font-weight:700;
-  cursor:pointer;
-  transition: transform .08s ease, box-shadow .12s;
-  box-shadow: 0 8px 22px rgba(7,106,255,0.12);
-}
-.btn:active { transform: translateY(1px); }
-.btn[disabled] { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
-
-/* Secondary text button */
-.btn-ghost {
-  background:transparent;
-  color:var(--primary);
-  border:1px solid rgba(11,98,216,0.06);
-  box-shadow:none;
+input:focus, select:focus {
+    border-color: #007cf0;
+    box-shadow: 0 0 0 2px rgba(0, 124, 240, 0.25);
+    outline: none;
 }
 
-/* small helper text */
-.help { font-size:12px; color:var(--muted); margin-top:6px; }
-
-/* result area (kept for accessibility but hidden visually by default) */
-#result {
-  margin-top:14px;
-  font-weight:700;
-  font-size:16px;
-  text-align:center;
-  color:#0b1220;
+/* Range sliders */
+input[type="range"] {
+    appearance: none;
+    height: 6px;
+    width: 100%;
+    background: #cfe4ff;
+    border-radius: 5px;
+}
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #007cf0;
+    border-radius: 50%;
 }
 
-/* ===== SELECT STYLING ===== */
-.select {
-  -webkit-appearance:none;
-  -moz-appearance:none;
-  appearance:none;
-  position:relative;
-  background: #fff;
-  padding-right: 40px;
-  background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%), linear-gradient(135deg, #6b7280 50%, transparent 50%);
-  background-position: calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-}
-.select:focus { border-color: rgba(7,106,255,0.9); }
-
-/* multiple select box tidy */
-.select[multiple] { height:auto; min-height:120px; padding:10px; }
-
-/* chips container (for optional JS) */
-.chips {
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:8px;
-}
-.chip {
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 10px;
-  border-radius:999px;
-  background: linear-gradient(180deg, #eef7ff, #f7fbff);
-  color:#034ea2;
-  font-weight:600;
-  font-size:13px;
-  border:1px solid rgba(3,78,162,0.06);
+/* Submit Button */
+#predictBtn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #005bea, #00c6fb);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: 0.25s ease;
 }
 
-/* ===== Form footer ===== */
-.form-footer {
-  margin-top:18px;
-  display:flex;
-  gap:12px;
-  align-items:center;
-  justify-content:space-between;
-  flex-wrap:wrap;
+#predictBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0px 6px 18px rgba(0, 124, 240, 0.35);
 }
-.form-footer .left { color:var(--muted); font-size:13px; }
-.form-footer .right { display:flex; gap:12px; }
-
-/* ===== Error states ===== */
-.input.error, .select.error {
-  border-color: var(--danger);
-  box-shadow: 0 6px 20px rgba(176,0,32,0.06);
-}
-.error-msg { color:var(--danger); font-weight:700; font-size:13px; margin-top:6px; }
-
-/* ===== small screens ===== */
-@media (max-width:480px) {
-  .form-footer { flex-direction:column; align-items:stretch; gap:10px; }
-}
-
-/* ===== subtle touch: animation for card entrance ===== */
-@keyframes cardEnter {
-  from { transform: translateY(10px); opacity:0; }
-  to { transform: translateY(0); opacity:1; }
-}
-.form-card { animation: cardEnter .28s ease both; }
