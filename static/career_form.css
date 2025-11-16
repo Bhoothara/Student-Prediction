@@ -1,45 +1,65 @@
-body { margin: 0; padding: 0; font-family: "Inter", sans-serif; /* Education background image */ background: url("/static/images/bg.jpeg") no-repeat center center fixed; background-size: cover; /* Add a soft white overlay for readability */ position: relative; } body::before { content: ""; position: fixed; inset: 0; background: rgba(255, 255, 255, 0.65); /* Soft fade */ backdrop-filter: blur(4px); z-index: -1; } /* Main container */ .page { width: 100%; min-height: 100vh; display: flex; justify-content: center; padding: 40px 20px; } /* Form Card */ .card { width: 100%; max-width: 850px; background: rgba(255, 255, 255, 0.90); border-radius: 16px; padding: 35px; box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.12); animation: fadeIn 0.8s ease; } /* Fade Animation */ @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } /* Input styles */ label { margin-bottom: 6px; font-weight: 600; color: #203040; } input, select { width: 100%; padding: 13px; border-radius: 10px; border: 1.5px solid #d1d9e6; background: #fff; font-size: 15px; } input:focus, select:focus { border-color: #007cf0; box-shadow: 0 0 0 2px rgba(0, 124, 240, 0.25); outline: none; } /* Range sliders */ input[type="range"] { appearance: none; height: 6px; width: 100%; background: #cfe4ff; border-radius: 5px; } input[type="range"]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; background: #007cf0; border-radius: 50%; } /* Submit Button */ #predictBtn { width: 100%; padding: 14px; border-radius: 12px; background: linear-gradient(90deg, #005bea, #00c6fb); color: #fff; font-size: 17px; font-weight: 700; border: none; cursor: pointer; transition: 0.25s ease; } #predictBtn:hover { transform: translateY(-2px); box-shadow: 0px 6px 18px rgba(0, 124, 240, 0.35); }
-/* ---------------------------------------------
-   career_form.css  — compact, clean form styles
-   Replace your file with this. Hard refresh.
-   --------------------------------------------- */
+/* career_form.css
+   Cleaned & corrected — full file. Replace your old file with this.
+*/
 
-/* Base page */
-:root{
+/* -----------------------
+   Variables & reset
+   ----------------------- */
+:root {
   --card-bg: #ffffff;
   --muted: #6b6b6b;
   --accent: #007cf0;
   --accent-2: #00dfd8;
-  --input-border: #e2e8f0;
+  --input-border: #d1d9e6;
   --shadow: 0 10px 30px rgba(12,18,28,0.06);
+  --chip-gradient: linear-gradient(180deg,#0d6efd,#0b63e8);
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+html, body { height: 100%; margin: 0; padding: 0; font-family: "Inter", "Helvetica Neue", Arial, sans-serif; color: #1f2937; }
 
+/* Body background: image with soft overlay; fallback gradient if image missing */
 body {
-  margin: 0;
-  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
-  background: linear-gradient(180deg,#f4fbff 0%,#ffffff 70%);
-  color: #1f2937;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+  position: relative;
+  background: linear-gradient(180deg,#f4fbff 0%,#ffffff 70%), url("/static/images/bg.jpeg") no-repeat center center fixed;
+  background-size: cover;
+  min-height: 100vh;
 }
 
-/* page wrapper */
+/* soft white overlay for readability */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: -1;
+}
+
+/* -----------------------
+   Page wrapper & card
+   ----------------------- */
 .page {
   width: 100%;
   max-width: 920px;
-  margin: 84px auto 48px; /* keep room for fixed nav */
+  margin: 84px auto 48px; /* room for fixed nav */
   padding: 0 18px;
+  display: block;
 }
 
-/* Card */
 form.card {
   background: var(--card-bg);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 26px;
   box-shadow: var(--shadow);
   border: 1px solid rgba(20,20,20,0.03);
+  backdrop-filter: blur(4px);
+  animation: fadeIn .6s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Headings */
@@ -50,7 +70,7 @@ form.card h2 {
   color: #0b4d88;
 }
 
-/* Labels and text */
+/* Labels */
 label {
   display: block;
   margin: 6px 0 6px 0;
@@ -76,16 +96,25 @@ output {
   margin-bottom: 8px;
 }
 
-/* Range slider container */
+/* Range slider */
 .ranges { display:flex; gap:10px; align-items:center; }
 .ranges output { width:46px; text-align:center; background:#fafafa; border-radius:6px; padding:6px; border:1px solid #eee; }
+input[type="range"] { -webkit-appearance:none; appearance:none; height:6px; width:100%; background:#cfe4ff; border-radius:6px; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--accent); cursor:pointer; }
+
+/* Focus states */
+input:focus, select:focus, textarea:focus, output:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(0,124,240,0.12);
+}
 
 /* Buttons */
 button#predictBtn {
   margin-top: 14px;
   width: 100%;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
   font-weight: 800;
@@ -93,17 +122,27 @@ button#predictBtn {
   color: #fff;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   box-shadow: 0 8px 22px rgba(3,60,120,0.12);
+  transition: transform .18s ease, box-shadow .18s ease;
 }
-button#predictBtn:disabled { opacity:0.7; cursor:not-allowed; }
+button#predictBtn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(3,60,120,0.14); }
+button#predictBtn:disabled { opacity:0.75; cursor:not-allowed; }
 
-/* Smaller vertical spacing inside the card (fixes large gaps) */
-form.card > * { margin-top: 6px; margin-bottom: 6px; }
+/* result text */
+#result { margin-top: 14px; font-weight: 700; font-size: 16px; text-align: center; min-height: 28px; color: #0b4d88; }
 
-/* ---------------------------
-   Native select (regular)
-   --------------------------- */
+/* modal */
+.modal-backdrop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); z-index: 2000; padding: 20px; }
+.modal { width: 420px; max-width: 94%; background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.28); text-align: center; }
+.modal h3 { margin: 0 0 10px; }
+.modal p { margin: 0 0 14px; }
 
-/* Normal single-select - consistent height */
+/* minor util */
+.text-muted { color: var(--muted); font-size: 13px; }
+
+/* -----------------------
+   Native select appearance (compact)
+   ----------------------- */
+
 form.card select {
   display: block;
   height: 44px;
@@ -111,20 +150,30 @@ form.card select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background-color: #fff;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(0,0,0,0.18) 50%),
+                    linear-gradient(135deg, rgba(0,0,0,0.18) 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(1em + 2px), calc(100% - 15px) calc(1em + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
 }
 
-/* Native multiple-select: keep max-height to avoid huge boxes */
+/* Multi-select fallback: compact and scrollable */
 form.card select[multiple] {
   display: block;
   height: auto;
-  max-height: 180px;
+  max-height: 160px;
   overflow-y: auto;
   padding: 8px 10px;
   border-radius: 8px;
   background: #fff;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
-/* Option elements: ensure default look (no oversized pill look) */
+/* option spacing */
 form.card select option {
   padding: 6px 8px;
   background: white;
@@ -132,73 +181,96 @@ form.card select option {
   font-weight: 500;
 }
 
-/* Prevent any previous global .chip or .btn rules from stretching native options */
-form.card select option,
-form.card select[multiple] option {
-  border-radius: 0;
-  box-shadow: none;
+/* prevent global overrides */
+form.card .big-pill,
+form.card .list-pill,
+form.card .pill,
+form.card li,
+form.card option {
+  border-radius: 8px !important;
+  padding: 6px 8px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: inherit !important;
 }
 
-/* ---------------------------
-   Chip-select (JS enhanced)
-   If you use chip_select.js it will create a .chip-container
-   and .chip elements. This CSS keeps chips small and compact.
-   --------------------------- */
+/* -----------------------
+   Chip / chip-select UI
+   ----------------------- */
 
-.chip-select-wrapper {
-  width: 100%;
-  margin-top: 6px;
+/* wrapper used by JS */
+.chip-select-wrapper { width: 100%; margin-top: 6px; margin-bottom: 8px; }
+
+/* hide original select after conversion */
+.chip-select-wrapper select.chip-enabled { display: none; }
+
+/* chip container: wrapping, compact */
+form.card .chip-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;            /* spacing between chips */
+  align-items: center;
+  padding: 6px 0;
   margin-bottom: 8px;
 }
 
-/* Hide the original <select> if JS converts it (but keep it in DOM) */
-.chip-select-wrapper select.chip-enabled {
-  display: none;
-}
-
-/* Chip container that shows selected items */
-.chip-container {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 6px;
-  min-height: 40px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,250,0.98));
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
-}
-
-/* Individual chips (SMALL) */
-.chip {
+/* each chip: compact pill with internal spacing for remove button */
+form.card .chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: linear-gradient(180deg,#0d6efd,#0b63e8);
-  color: #fff;
-  font-weight:700;
-  font-size: 13px;
+  gap: 10px;
+  padding: 6px 12px;
+  height: 36px;             /* fixed comfortable height */
   border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(13,110,253,0.08);
-  max-width: 260px;
+  background: var(--chip-gradient);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: 0 6px 14px rgba(13,110,253,0.08);
+  position: relative;
 }
 
-/* small remove 'x' inside chip */
-.chip .remove {
-  display:inline-flex;
-  width:20px;
-  height:20px;
-  align-items:center;
-  justify-content:center;
-  border-radius:50%;
-  background: rgba(255,255,255,0.12);
-  color:white;
-  font-size:12px;
-  cursor:pointer;
+/* chip text span (created by JS) — reserve space for the remove button */
+form.card .chip .chip__text {
+  display: inline-block;
+  max-width: calc(100% - 40px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* remove button: small circular button fully inside pill */
+form.card .chip .remove {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.22);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+/* hover feedback */
+form.card .chip .remove:hover { background: rgba(255,255,255,0.34); }
+
+/* optional wrap variant (if JS adds .chip--wrap) */
+form.card .chip.chip--wrap {
+  white-space: normal;
+  max-width: 260px;
+  word-break: break-word;
 }
 
 /* placeholder when no chips selected */
@@ -208,49 +280,36 @@ form.card select[multiple] option {
   padding: 6px 8px;
 }
 
-/* When many chips exist, allow wrapping and keep gap */
-.chip-container { gap: 8px; }
+/* ensure chips do not push select upward */
+form.card select.chip-enabled { margin-top: 6px; }
 
-/* ---------------------------
-   Prevent huge pulsing/rounded list items
-   (this overrides many common 3rd-party rules that create big blue bars)
-   --------------------------- */
+/* -----------------------
+   Responsive tweaks
+   ----------------------- */
 
-form.card .big-pill,
-form.card .list-pill,
-form.card .pill {
-  border-radius: 8px !important;
-  padding: 8px 12px !important;
-  display: inline-block !important;
-  width: auto !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  color: inherit !important;
-}
-
-/* If some theme made all <li> / <option> into big pills, revert them */
-form.card li,
-form.card option {
-  border-radius: 0 !important;
-  padding: 6px 8px !important;
-  margin: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-/* ---------------------------
-   Small screen adjustments
-   --------------------------- */
 @media (max-width: 740px) {
   .page { margin: 96px 12px 36px; padding: 0 12px; }
   form.card { padding: 18px; border-radius: 12px; }
-  .chip { font-size: 12px; padding: 6px 8px; max-width: 200px; }
+  form.card .chip { font-size: 13px; padding: 5px 10px; height: 34px; gap: 8px; }
+  form.card .chip .remove { width: 18px; height: 18px; font-size: 11px; }
+  form.card .chip .chip__text { max-width: calc(100% - 36px); }
   form.card select[multiple] { max-height: 140px; }
 }
 
-/* ---------------------------
-   Minor utilities
-   --------------------------- */
-.text-muted { color: var(--muted); font-size: 13px; }
+@media (max-width: 520px) {
+  form.card .chip { font-size: 12px; padding: 5px 8px; height: 32px; gap: 8px; }
+  form.card .chip .remove { width: 18px; height: 18px; font-size: 11px; }
+  form.card .chip .chip__text { max-width: calc(100% - 36px); }
+  form.card select { height: 40px; }
+  input[type="number"], input[type="text"] { font-size: 14px; }
+}
 
-/* end of file */
+/* -----------------------
+   Accessibility & util
+   ----------------------- */
+[role="button"], button { cursor: pointer; }
+.hidden { display: none !important; }
+
+/* -----------------------
+   End of file
+   ----------------------- */

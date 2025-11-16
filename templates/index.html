@@ -1,115 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-<meta name="theme-color" content="#007cf0">
+  <meta name="theme-color" content="#007cf0">
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/chip_select') }}">
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='career_form.css') }}">
+  <!-- keep these as in your project -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/chip_select') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='career_form.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/predict_popup.css') }}">
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Career Form — Student Career Predictor</title>
+
   <style>
-    /* --- career_form.css (append or replace relevant parts) --- */
-
-/* Container / page */
-body {
-  font-family: Arial, sans-serif;
-  background: linear-gradient(180deg, #e9f5ff 0%, #f6fbff 40%, #ffffff 100%);
-  margin: 0;
-  padding: 0;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Page wrapper that centers content and gives spacing */
-.page {
-  width: 100%;
-  max-width: 900px;
-  margin: 80px auto 60px; /* top margin accounts for fixed nav */
-  padding: 16px;
-  box-sizing: border-box;
-}
-
-/* Form card */
-form.card {
-  background: rgba(255,255,255,0.96);
-  border-radius: 14px;
-  padding: 28px;
-  box-shadow: 0 12px 32px rgba(12,18,28,0.08);
-  border: 1px solid rgba(20,20,20,0.03);
-  backdrop-filter: blur(6px);
-}
-
-/* Headline inside card */
-form.card h2 {
-  margin: 0 0 12px;
-  font-size: 22px;
-  font-weight: 800;
-  color: #0b4d88;
-}
-
-/* Labels/inputs styling (refined) */
-label { display:block; margin-top:12px; font-weight:700; color:#2b2b2b; }
-input[type="number"], input[type="text"], select, output {
-  width:100%;
-  padding:10px 12px;
-  margin-top:8px;
-  border:1px solid #e2e8f0;
-  border-radius:8px;
-  font-size:14px;
-  background: #fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
-}
-
-/* Range output style */
-.ranges { display:flex; gap:10px; align-items:center; }
-.ranges output { width:46px; text-align:center; background:#fafafa; border-radius:6px; padding:6px; border:1px solid #eee; }
-
-/* Main button */
-button#predictBtn {
-  margin-top:20px;
-  width:100%;
-  padding:12px;
-  background: linear-gradient(90deg,#007cf0,#00dfd8);
-  color:#fff;
-  border:none;
-  border-radius:10px;
-  font-weight:800;
-  font-size:16px;
-  cursor:pointer;
-  box-shadow: 0 8px 20px rgba(3, 60, 120, 0.12);
-}
-button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
-
-/* Small screens: spacing & form width */
-@media (max-width: 600px) {
-  .page { margin: 96px 10px 40px; padding: 8px; }
-  form.card { padding: 18px; border-radius:12px; }
-  form.card h2 { font-size:20px; }
-}
-
-    .page { width:100%; max-width:900px; }
-    form.card { background:#fff; padding:25px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.06); }
-    label { display:block; margin-top:12px; font-weight:600; color:#222; }
-    input[type="number"], input[type="text"], select, output { width:100%; padding:9px; margin-top:6px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
-    .ranges { display:flex; gap:10px; align-items:center; }
-    .ranges output { width:44px; text-align:center; background:#fafafa; border-radius:6px; padding:6px; border:1px solid #eee; }
-    button { margin-top:18px; width:100%; padding:12px; background:#007bff; color:white; border:none; border-radius:8px; cursor:pointer; font-size:16px; }
-    button:disabled { background:#9bbcf0; cursor:not-allowed; }
-    #result { margin-top:18px; font-weight:700; font-size:16px; text-align:center; min-height:28px; }
-    .modal-backdrop { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:2000; padding:20px; }
-    .modal { width:420px; max-width:94%; background:#fff; border-radius:10px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,0.3); text-align:center; }
-    .modal h3 { margin:0 0 10px; }
-    .modal p { margin:0 0 14px; }
-    .modal button { width:auto; padding:10px 14px; border-radius:8px; background:#23272b; color:#fff; border:none; cursor:pointer; }
+    /* Inline helper styles for the reusable custom-entry control */
+    #multiCustomRow {
+      display: none; /* shown only when an 'Other' option is selected */
+      margin-top: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #multiCustomRow .multi-input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1.5px solid #d1d9e6;
+      font-size: 15px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    #multiCustomRow .multi-actions {
+      display:flex;
+      gap:12px;
+      width:100%;
+    }
+    #multiCustomRow .multi-actions .multi-add {
+      flex:2;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      background:linear-gradient(90deg,#007cf0,#00dfd8);
+      color:white;
+      font-weight:700;
+      font-size:15px;
+      cursor:pointer;
+    }
+    #multiCustomRow .multi-actions .multi-cancel {
+      flex:1;
+      padding:12px;
+      border-radius:10px;
+      border:1.5px solid #d1d9e6;
+      background:#fff;
+      font-size:15px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    #multiHint { display:none; font-size:14px; color:#666; margin-top:6px; }
   </style>
 </head>
 <body>
-  <!-- Responsive Top Navigation Bar -->
+  <!-- Top nav -->
   <nav style="
     position: fixed;
     top: 0;
@@ -133,18 +84,8 @@ button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
     {% if user %}
       <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
         <span style="font-size: 0.95rem;">Welcome, <b>{{ user.username }}</b></span>
-        <a href="{{ url_for('logout') }}" 
-           style="
-             background-color: white;
-             color: #007cf0;
-             padding: 8px 16px;
-             border-radius: 20px;
-             text-decoration: none;
-             font-weight: 600;
-             font-size: 0.95rem;
-             transition: 0.3s;
-             white-space: nowrap;
-           "
+        <a href="{{ url_for('logout') }}"
+           style="background-color: white; color: #007cf0; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.3s; white-space: nowrap;"
            onmouseover="this.style.backgroundColor='#e3f2ff'"
            onmouseout="this.style.backgroundColor='white'">
           Logout
@@ -153,10 +94,10 @@ button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
     {% endif %}
   </nav>
 
-  <!-- Spacer to prevent overlap -->
   <div style="margin-top: 80px;"></div>
 
   <script src="{{ url_for('static', filename='js/predict_popup.js') }}"></script>
+
   <div class="page">
     <form id="careerForm" class="card" autocomplete="off">
       <h2>🎓 Career Prediction Form</h2>
@@ -195,7 +136,7 @@ button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
       </div>
 
       <label>Hackathons Attended</label>
-      <input type="number" id="hack" min="0" max="09" required>
+      <input type="number" id="hack" min="0" max="99" required>
 
       <label>Coding Skills Rating (1–10)</label>
       <div class="ranges">
@@ -221,73 +162,90 @@ button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
         <option value="0">No</option>
       </select>
 
-<label>Certifications</label>
-<select id="cert" multiple class="chip-enabled">
-  <option value="">-- Select Certification --</option>
-  <option value="1">Python Programming</option>
-  <option value="2">Java Full Stack</option>
-  <option value="3">Data Science</option>
-  <option value="4">Machine Learning</option>
-  <option value="5">Cloud Computing (AWS / Azure)</option>
-  <option value="6">Cyber Security</option>
-  <option value="7">Web Development</option>
-  <option value="8">Database Management (SQL)</option>
-  <option value="9">Artificial Intelligence</option>
-</select>
+      <!-- Certifications (with Other option) -->
+      <label>Certifications</label>
+      <select id="cert" multiple class="chip-enabled">
+        <option value="">-- Select Certification --</option>
+        <option value="1">Python Programming</option>
+        <option value="2">Java Full Stack</option>
+        <option value="3">Data Science</option>
+        <option value="4">Machine Learning</option>
+        <option value="5">Cloud Computing (AWS / Azure)</option>
+        <option value="6">Cyber Security</option>
+        <option value="7">Web Development</option>
+        <option value="8">Database Management (SQL)</option>
+        <option value="9">Artificial Intelligence</option>
+        <option value="other">Other (enter certificate)</option>
+      </select>
 
+      <!-- Workshops -->
+      <label>Workshops</label>
+      <select id="work" multiple class="chip-enabled">
+        <option value="">-- Select Workshop --</option>
+        <option value="1">Python Programming Workshop</option>
+        <option value="2">AI & Machine Learning Bootcamp</option>
+        <option value="3">Web Development Workshop</option>
+        <option value="4">Data Analytics with Excel</option>
+        <option value="5">Cyber Security Awareness Workshop</option>
+        <option value="6">Cloud Computing (AWS / Azure)</option>
+        <option value="7">Database & SQL Workshop</option>
+        <option value="8">Mobile App Development Workshop</option>
+        <option value="9">IoT (Internet of Things)</option>
+        <option value="other">Other (enter workshop)</option>
+      </select>
 
-<label>Workshops</label>
-<select id="work" multiple class="chip-enabled">
-  <option value="">-- Select Workshop --</option>
-  <option value="1">Python Programming Workshop</option>
-  <option value="2">AI & Machine Learning Bootcamp</option>
-  <option value="3">Web Development Workshop</option>
-  <option value="4">Data Analytics with Excel</option>
-  <option value="5">Cyber Security Awareness Workshop</option>
-  <option value="6">Cloud Computing (AWS / Azure)</option>
-  <option value="7">Database & SQL Workshop</option>
-  <option value="8">Mobile App Development Workshop</option>
-  <option value="9">IoT (Internet of Things)</option>
-</select>
+      <!-- Reading / Writing -->
+      <label>Reading/Writing Skills</label>
+      <select id="read" multiple class="chip-enabled">
+        <option value="">-- Select Reading/Writing Level --</option>
+        <option value="1">Excellent — Strong reading & writing communication</option>
+        <option value="2">Good — Can write and understand technical content</option>
+        <option value="3">Average — Understands basics but needs improvement</option>
+        <option value="4">Below Average — Struggles with comprehension</option>
+        <option value="5">Poor — Needs major improvement</option>
+      </select>
 
+      <!-- Interested Career Area -->
+      <label>Interested Career Area</label>
+      <select id="career" multiple class="chip-enabled">
+        <option value="">-- Select Your Career Interest --</option>
+        <option value="1">Software Development</option>
+        <option value="2">Web Development</option>
+        <option value="3">Data Science / Machine Learning</option>
+        <option value="4">Artificial Intelligence</option>
+        <option value="5">Cybersecurity</option>
+        <option value="6">Cloud Computing</option>
+        <option value="7">Networking & Infrastructure</option>
+        <option value="8">Database Administration</option>
+        <option value="9">UI/UX Design</option>
+        <option value="10">Research & Teaching</option>
+        <option value="other">Other (enter career area)</option>
+      </select>
 
- <label>Reading/Writing Skills</label>
-<select id="read" multiple class="chip-enabled">
-  <option value="">-- Select Reading/Writing Level --</option>
-  <option value="1">Excellent — Strong reading & writing communication</option>
-  <option value="2">Good — Can write and understand technical content</option>
-  <option value="3">Average — Understands basics but needs improvement</option>
-  <option value="4">Below Average — Struggles with comprehension</option>
-  <option value="5">Poor — Needs major improvement</option>
-</select>
+      <!-- Preferred Company Type -->
+      <label>Preferred Company Type</label>
+      <select id="company" multiple class="chip-enabled">
+        <option value="">-- Select Preferred Company Type --</option>
+        <option value="1">Startup</option>
+        <option value="2">Product-Based Company</option>
+        <option value="3">Service-Based Company</option>
+        <option value="4">Government Organization</option>
+        <option value="5">Research Institute</option>
+        <option value="6">Non-Profit / NGO</option>
+        <option value="7">Freelance / Self-Employed</option>
+        <option value="8">Abroad / MNC Company</option>
+        <option value="other">Other (enter company type)</option>
+      </select>
 
-<label>Interested Career Area</label>
-<select id="career"multiple class="chip-enabled">
-  <option value="">-- Select Your Career Interest --</option>
-  <option value="1">Software Development</option>
-  <option value="2">Web Development</option>
-  <option value="3">Data Science / Machine Learning</option>
-  <option value="4">Artificial Intelligence</option>
-  <option value="5">Cybersecurity</option>
-  <option value="6">Cloud Computing</option>
-  <option value="7">Networking & Infrastructure</option>
-  <option value="8">Database Administration</option>
-  <option value="9">UI/UX Design</option>
-  <option value="10">Research & Teaching</option>
-</select>
-<label>Preferred Company Type</label>
-<select id="company" multiple class="chip-enabled">
-  <option value="">-- Select Preferred Company Type --</option>
-  <option value="1">Startup</option>
-  <option value="2">Product-Based Company</option>
-  <option value="3">Service-Based Company</option>
-  <option value="4">Government Organization</option>
-  <option value="5">Research Institute</option>
-  <option value="6">Non-Profit / NGO</option>
-  <option value="7">Freelance / Self-Employed</option>
-  <option value="8">Abroad / MNC Company</option>
-</select>
-
+      <!-- Reusable custom-entry row (single) -->
+      <div id="multiCustomRow" aria-hidden="true">
+        <input id="multiCustomInput" class="multi-input" type="text" placeholder="Enter custom value...">
+        <div class="multi-actions">
+          <button type="button" id="multiAddBtn" class="multi-add">Add</button>
+          <button type="button" id="multiCancelBtn" class="multi-cancel">Cancel</button>
+        </div>
+      </div>
+      <div id="multiHint">Tip: type the value then press Add (or press Enter).</div>
 
       <label>Worked in Teams Before?</label>
       <select id="team">
@@ -300,7 +258,7 @@ button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
     </form>
   </div>
 
-  <!-- Eligibility Modal -->
+  <!-- Eligibility modal -->
   <div id="eligModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-labelledby="eligTitle">
       <h3 id="eligTitle">Not eligible</h3>
@@ -310,6 +268,7 @@ button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
   </div>
 
   <script>
+    /* ----- form validation & submit (kept from your original) ----- */
     const requiredPercentIds = ['os','algo','prog','se','net','elec','arch','math','comm'];
     const predictBtn = document.getElementById('predictBtn');
     const eligibilityModal = document.getElementById('eligModal');
@@ -349,6 +308,7 @@ button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
         }
       });
     });
+
     careerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const bad = [];
@@ -359,14 +319,15 @@ button#predictBtn:disabled { opacity:0.65; cursor:not-allowed; }
         const nv = Number(raw);
         if (!isFinite(nv) || nv < 35) { bad.push(id); }
       }
-// Block if any field > 100
-const tooHigh = hasOverLimit();
-if (tooHigh.length > 0) {
-    eligMsg.textContent = "Some values are above 100%. Please correct them.";
-    eligibilityModal.style.display = "flex";
-    eligibilityModal.setAttribute("aria-hidden", "false");
-    return; // stop form
-}
+
+      // Block if any field > 100
+      const tooHigh = hasOverLimit();
+      if (tooHigh.length > 0) {
+        eligMsg.textContent = "Some values are above 100%. Please correct them.";
+        eligibilityModal.style.display = "flex";
+        eligibilityModal.setAttribute("aria-hidden", "false");
+        return; // stop form
+      }
 
       if (bad.length > 0) { showIneligibleModal(bad); return; }
 
@@ -420,47 +381,231 @@ if (tooHigh.length > 0) {
     document.getElementById('logicOutput').value = document.getElementById('logic').value;
     document.getElementById('codeOutput').value = document.getElementById('code').value;
     document.getElementById('speakOutput').value = document.getElementById('speak').value;
-    /* -------------------------------
-   VALIDATE MAX 100 FOR PERCENTAGE FIELDS
---------------------------------*/
 
-const percentFields = ['os','algo','prog','se','net','elec','arch','math','comm'];
-
-function checkMaxLimit(id) {
-    const el = document.getElementById(id);
-    el.addEventListener("input", () => {
+    /* LIMIT CHECKS */
+    const percentFields = ['os','algo','prog','se','net','elec','arch','math','comm'];
+    function checkMaxLimit(id) {
+      const el = document.getElementById(id);
+      el.addEventListener("input", () => {
         let val = Number(el.value);
-
         if (val > 100) {
-            el.value = 100;
-
-            // Show warning modal
-            eligMsg.textContent = `Value must be below 100%. You entered ${val}.`;
-            eligibilityModal.style.display = "flex";
-            eligibilityModal.setAttribute("aria-hidden", "false");
+          el.value = 100;
+          eligMsg.textContent = `Value must be below 100%. You entered ${val}.`;
+          eligibilityModal.style.display = "flex";
+          eligibilityModal.setAttribute("aria-hidden", "false");
         }
-    });
-}
-
-// apply for all %
-percentFields.forEach(id => checkMaxLimit(id));
-
-/* Also block form submit if >100 (just in case) */
-function hasOverLimit() {
-    let bad = [];
-    percentFields.forEach(id => {
+      });
+    }
+    percentFields.forEach(id => checkMaxLimit(id));
+    function hasOverLimit() {
+      let bad = [];
+      percentFields.forEach(id => {
         const v = Number(document.getElementById(id).value || 0);
         if (v > 100) bad.push(id);
-    });
-    return bad;
-}
-
+      });
+      return bad;
+    }
   </script>
-  
+  <script>
+/* Hackathon limit: must be below 9 (i.e. 0..9 allowed).
+   Place this after your percentFields / hasOverLimit logic. */
+(function enforceHackLimit() {
+  const hackEl = document.getElementById('hack');
+  if (!hackEl) return;
 
-  
+  // Show modal helper (re-uses your eligMsg and eligibilityModal)
+  function showHackModal() {
+    eligMsg.textContent = "Please enter a value below 9 (not above 9).";
+    eligibilityModal.style.display = "flex";
+    eligibilityModal.setAttribute("aria-hidden", "false");
+  }
+
+  // On input: if user types >9, clamp and show message
+  hackEl.addEventListener('input', () => {
+    const v = Number(hackEl.value || 0);
+    if (!isFinite(v)) return;
+    if (v > 9) {
+      // optional: clamp so the field stays valid
+      hackEl.value = 9;
+      showHackModal();
+    } else if (v < 0) {
+      // prevent negative numbers
+      hackEl.value = 0;
+    }
+  });
+
+  // On blur: final check
+  hackEl.addEventListener('blur', () => {
+    const v = Number(hackEl.value || 0);
+    if (!isFinite(v)) return;
+    if (v > 9) showHackModal();
+  });
+
+  // Also block submit (extra safety)
+  careerForm.addEventListener('submit', (e) => {
+    const v = Number(hackEl.value || 0);
+    if (v > 9) {
+      e.preventDefault();
+      showHackModal();
+      // keep predict button enabled/disabled state as appropriate
+      predictBtn.disabled = false;
+      return false;
+    }
+  });
+})();
+</script>
+
+
+  <!-- Reusable multi-select "Other -> Add" handler -->
+<script>
+(function setupMultiCustom() {
+  const selects = ['cert','work','career','company'];
+  const multiRow = document.getElementById('multiCustomRow');
+  const input = document.getElementById('multiCustomInput');
+  const addBtn = document.getElementById('multiAddBtn');
+  const cancelBtn = document.getElementById('multiCancelBtn');
+  const hint = document.getElementById('multiHint');
+
+  let activeSelectId = null;
+  let originalParent = multiRow.parentNode; // keep reference to original place
+
+  // Helper to insert node after a reference node
+  function insertAfter(newNode, referenceNode) {
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+  }
+
+  function showRowFor(selectEl) {
+    activeSelectId = selectEl.id;
+
+    // move multiRow & hint right after the active select so they appear under it
+    insertAfter(multiRow, selectEl);
+    insertAfter(hint, multiRow);
+
+    multiRow.style.display = 'block';
+    multiRow.setAttribute('aria-hidden','false');
+    hint.style.display = 'block';
+    input.value = '';
+    input.focus();
+  }
+
+  function hideRow() {
+    // move back to original place (optional). We'll hide instead of permanently moving.
+    // If you prefer the row remain where last used, remove the next line.
+    if (originalParent && originalParent !== multiRow.parentNode) {
+      originalParent.appendChild(multiRow);
+      originalParent.appendChild(hint);
+    }
+
+    activeSelectId = null;
+    multiRow.style.display = 'none';
+    multiRow.setAttribute('aria-hidden','true');
+    hint.style.display = 'none';
+    input.value = '';
+  }
+
+  function onSelectChange(e) {
+    const sel = e.target;
+    const hasOther = Array.from(sel.selectedOptions).some(o => o.value === 'other');
+    if (hasOther) {
+      showRowFor(sel);
+    } else {
+      if (activeSelectId === sel.id) hideRow();
+    }
+  }
+
+  function scrollOptionIntoView(sel, optIndex) {
+    try {
+      const option = sel.options[optIndex];
+      if (!option) return;
+      const top = option.offsetTop;
+      sel.scrollTop = Math.max(0, top - (sel.clientHeight / 3));
+    } catch (err) { /* ignore */ }
+  }
+
+  function addCustom() {
+    const text = (input.value || '').trim();
+    if (!text || !activeSelectId) return;
+    const sel = document.getElementById(activeSelectId);
+
+    // dedupe by visible text (case-insensitive)
+    const existing = Array.from(sel.options).find(o => o.textContent.trim().toLowerCase() === text.toLowerCase());
+    let newIndex = -1;
+
+    if (existing) {
+      existing.selected = true;
+      newIndex = Array.prototype.indexOf.call(sel.options, existing);
+    } else {
+      const val = 'custom-' + Date.now();
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = text;
+      opt.selected = true;
+
+      // Insert BEFORE option at index 1 (so it becomes index 1)
+      if (sel.options.length > 1) {
+        sel.insertBefore(opt, sel.options[1]);
+        newIndex = 1;
+      } else {
+        sel.add(opt);
+        newIndex = sel.options.length - 1;
+      }
+    }
+
+    // deselect 'other'
+    Array.from(sel.options).forEach(o => { if (o.value === 'other') o.selected = false; });
+
+    // ensure newly inserted option is selected and visible
+    if (newIndex >= 0) {
+      try { sel.selectedIndex = newIndex; } catch (e) {}
+      scrollOptionIntoView(sel, newIndex);
+    }
+
+    // notify change so chip_select.js updates chips
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+
+    hideRow();
+  }
+
+  function cancelCustom() {
+    if (!activeSelectId) { hideRow(); return; }
+    const sel = document.getElementById(activeSelectId);
+    Array.from(sel.options).forEach(o => { if (o.value === 'other') o.selected = false; });
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    hideRow();
+  }
+
+  // attach listeners to each target select
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', onSelectChange);
+  });
+
+  addBtn.addEventListener('click', addCustom);
+  cancelBtn.addEventListener('click', cancelCustom);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addCustom(); }
+    else if (e.key === 'Escape') { e.preventDefault(); cancelCustom(); }
+  });
+
+  // init: if any select already has 'other' selected, show the row for first found
+  for (const id of selects) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (Array.from(el.selectedOptions).some(o => o.value === 'other')) {
+      showRowFor(el);
+      break;
+    }
+  }
+})();
+</script>
+
+
+  <!-- existing chip_select.js must come after the DOM scripts -->
   <script src="{{ url_for('static', filename='js/chip_select.js') }}"></script>
 
+  <!-- popup helper -->
   <script src="{{ url_for('static', filename='js/predict_popup.js') }}"></script>
 </body>
 </html>
