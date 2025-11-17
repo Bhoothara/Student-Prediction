@@ -102,31 +102,48 @@
     <form id="careerForm" class="card" autocomplete="off">
       <h2>🎓 Career Prediction Form</h2>
 
-      <label>Acedamic % in Operating Systems</label>
-      <input type="number" id="os" min="0" max="100" required>
+    <label class="label-with-icon">
+         Acedamic % in Operating Systems*
+     <img src="{{ url_for('static', filename='icons/os.png') }}" class="os-icon">
+    </label>
+    <input type="number" id="algo" min="0" max="100" required>
 
-      <label>Percentage in Algorithms</label>
-      <input type="number" id="algo" min="0" max="100" required>
 
-      <label>Programming Concepts (%)</label>
-      <input type="number" id="prog" min="0" max="100" required>
 
-      <label>Software Engineering (%)</label>
+<label class="label-with-icon">
+    Programming Concepts (%)
+    <img src="{{ url_for('static', filename='icons/coding.jpg') }}" class="subject-icon">
+</label>
+<input type="number" id="prog" min="0" max="100" required>
+
+      <label>Software Engineering (%)*
+          <img src="{{ url_for('static', filename='icons/software.png') }}" class="subject-icon">
+</label>
       <input type="number" id="se" min="0" max="100" required>
 
-      <label>Computer Networks (%)</label>
+      <label>Computer Networks (%)*
+                  <img src="{{ url_for('static', filename='icons/Computer.png') }}" class="subject-icon">
+      </label>
       <input type="number" id="net" min="0" max="100" required>
 
-      <label>Electronics Subjects (%)</label>
+      <label>Electronics Subjects (%)*
+                  <img src="{{ url_for('static', filename='icons/electrons.png') }}" class="subject-icon">
+      </label>
       <input type="number" id="elec" min="0" max="100" required>
 
-      <label>Computer Architecture (%)</label>
+      <label>Computer Architecture (%)*
+                  <img src="{{ url_for('static', filename='icons/com.png') }}" class="subject-icon">
+      </label>
       <input type="number" id="arch" min="0" max="100" required>
 
-      <label>Mathematics (%)</label>
+      <label>Mathematics (%)*
+                  <img src="{{ url_for('static', filename='icons/maths.png') }}" class="subject-icon">
+      </label>
       <input type="number" id="math" min="0" max="100" required>
 
-      <label>Communication Skills (%)</label>
+      <label>Communication Skills (%)*
+                  <img src="{{ url_for('static', filename='icons/comunication.png') }}" class="subject-icon">
+      </label>
       <input type="number" id="comm" min="0" max="100" required>
 
       <label>Logical Quotient Rating (1–10)</label>
@@ -135,7 +152,7 @@
         <output id="logicOutput">5</output>
       </div>
 
-      <label>Hackathons Attended</label>
+      <label>Hackathons Attended*</label>
       <input type="number" id="hack" min="0" max="99" required>
 
       <label>Coding Skills Rating (1–10)</label>

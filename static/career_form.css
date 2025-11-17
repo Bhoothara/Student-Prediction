@@ -313,3 +313,29 @@ form.card select.chip-enabled { margin-top: 6px; }
 /* -----------------------
    End of file
    ----------------------- */
+.label-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 6px;     /* small space between text & icon */
+    font-weight: 600;
+}
+
+.os-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    opacity: 0.9;
+}
+.label-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.subject-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    opacity: 0.9;
+}
