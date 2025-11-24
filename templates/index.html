@@ -102,48 +102,31 @@
     <form id="careerForm" class="card" autocomplete="off">
       <h2>🎓 Career Prediction Form</h2>
 
-    <label class="label-with-icon">
-         Acedamic % in Operating Systems*
-     <img src="{{ url_for('static', filename='icons/os.png') }}" class="os-icon">
-    </label>
-    <input type="number" id="algo" min="0" max="100" required>
+      <label>Acedamic % in Operating Systems*</label>
+      <input type="number" id="os" min="0" max="100" required>
 
+      <label>Percentage in Algorithms*</label>
+      <input type="number" id="algo" min="0" max="100" required>
 
+      <label>Programming Concepts (%)*</label>
+      <input type="number" id="prog" min="0" max="100" required>
 
-<label class="label-with-icon">
-    Programming Concepts (%)
-    <img src="{{ url_for('static', filename='icons/coding.jpg') }}" class="subject-icon">
-</label>
-<input type="number" id="prog" min="0" max="100" required>
-
-      <label>Software Engineering (%)*
-          <img src="{{ url_for('static', filename='icons/software.png') }}" class="subject-icon">
-</label>
+      <label>Software Engineering (%)*</label>
       <input type="number" id="se" min="0" max="100" required>
 
-      <label>Computer Networks (%)*
-                  <img src="{{ url_for('static', filename='icons/Computer.png') }}" class="subject-icon">
-      </label>
+      <label>Computer Networks (%)*</label>
       <input type="number" id="net" min="0" max="100" required>
 
-      <label>Electronics Subjects (%)*
-                  <img src="{{ url_for('static', filename='icons/electrons.png') }}" class="subject-icon">
-      </label>
+      <label>Electronics Subjects (%)*</label>
       <input type="number" id="elec" min="0" max="100" required>
 
-      <label>Computer Architecture (%)*
-                  <img src="{{ url_for('static', filename='icons/com.png') }}" class="subject-icon">
-      </label>
+      <label>Computer Architecture (%)*</label>
       <input type="number" id="arch" min="0" max="100" required>
 
-      <label>Mathematics (%)*
-                  <img src="{{ url_for('static', filename='icons/maths.png') }}" class="subject-icon">
-      </label>
+      <label>Mathematics (%)*</label>
       <input type="number" id="math" min="0" max="100" required>
 
-      <label>Communication Skills (%)*
-                  <img src="{{ url_for('static', filename='icons/comunication.png') }}" class="subject-icon">
-      </label>
+      <label>Communication Skills (%)*</label>
       <input type="number" id="comm" min="0" max="100" required>
 
       <label>Logical Quotient Rating (1–10)</label>
@@ -300,9 +283,9 @@
       const parts = badFields.map(f => {
         const v = rawVal(f) || "empty";
         const labelMap = { os:"OS", algo:"Algorithms", prog:"Programming Concepts", se:"Software Engineering", net:"Computer Networks", elec:"Electronics", arch:"Computer Architecture", math:"Mathematics", comm:"Communication Skills" };
-        return `${labelMap[f] || f}: ${v}%`;
+        return ${labelMap[f] || f}: ${v}%;
       });
-      eligMsg.textContent = `The following field(s) are below the minimum required (35%): ${parts.join(', ')}. Please correct them to continue.`;
+        eligMsg.textContent = The following field(s) are below the minimum required (35%): ${parts.join(', ')}. Please correct them to continue.;
       eligibilityModal.style.display = 'flex';
       eligibilityModal.setAttribute('aria-hidden','false');
     }
@@ -326,6 +309,7 @@
       });
     });
 
+    /*
     careerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const bad = [];
@@ -384,16 +368,8 @@
         });
         const json = await res.json();
         if (json && json.predicted_job_role) {
-          resultEl.innerHTML = `🎯 Predicted Career Role: <b>${json.predicted_job_role}</b>`;
+          resultEl.innerHTML = 🎯 Predicted Career Role: <b>${json.predicted_job_role}</b>;
         } else {
-          resultEl.innerHTML = `⚠️ Error: ${json.error || "Unexpected server response."}`;
-        }
-      } catch (err) {
-        resultEl.innerHTML = "⚠️ Cannot connect to backend. Make sure Flask server is running.";
-      } finally {
-        predictBtn.disabled = false;
-      }
-    });
 
     document.getElementById('logicOutput').value = document.getElementById('logic').value;
     document.getElementById('codeOutput').value = document.getElementById('code').value;
@@ -407,7 +383,7 @@
         let val = Number(el.value);
         if (val > 100) {
           el.value = 100;
-          eligMsg.textContent = `Value must be below 100%. You entered ${val}.`;
+          eligMsg.textContent = Value must be below 100%. You entered ${val}.;
           eligibilityModal.style.display = "flex";
           eligibilityModal.setAttribute("aria-hidden", "false");
         }
@@ -626,3 +602,6 @@
   <script src="{{ url_for('static', filename='js/predict_popup.js') }}"></script>
 </body>
 </html>
+
+
+
