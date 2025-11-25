@@ -1,168 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#007cf0">
+  <title>Career Form — Student Career Predictor (Clean)</title>
 
-  <!-- keep these as in your project -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/chip_select') }}">
+  <!-- Project CSS (keep your project files) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chip_select.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='career_form.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/predict_popup.css') }}">
 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Career Form — Student Career Predictor</title>
-
   <style>
-    /* Inline helper styles for the reusable custom-entry control */
-    #multiCustomRow {
-      display: none; /* shown only when an 'Other' option is selected */
-      margin-top: 10px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    #multiCustomRow .multi-input {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1.5px solid #d1d9e6;
-      font-size: 15px;
-      margin-bottom: 10px;
-      box-sizing: border-box;
-    }
-    #multiCustomRow .multi-actions {
-      display:flex;
-      gap:12px;
-      width:100%;
-    }
-    #multiCustomRow .multi-actions .multi-add {
-      flex:2;
-      padding:12px;
-      border-radius:10px;
-      border:none;
-      background:linear-gradient(90deg,#007cf0,#00dfd8);
-      color:white;
-      font-weight:700;
-      font-size:15px;
-      cursor:pointer;
-    }
-    #multiCustomRow .multi-actions .multi-cancel {
-      flex:1;
-      padding:12px;
-      border-radius:10px;
-      border:1.5px solid #d1d9e6;
-      background:#fff;
-      font-size:15px;
-      font-weight:600;
-      cursor:pointer;
-    }
-    #multiHint { display:none; font-size:14px; color:#666; margin-top:6px; }
+    /* minimal helper styles used by inline script */
+    body { font-family: system-ui, -apple-system,Segoe UI, Roboto, "Helvetica Neue", Arial; background:#f6f8fb; color:#111; }
+    .page { max-width:900px; margin:24px auto; padding:20px; }
+    .card { background:#fff; border-radius:12px; padding:20px; box-shadow:0 6px 18px rgba(16,24,40,0.06); }
+    label { display:block; margin-top:12px; font-weight:600; }
+    input[type=number], select, .multi-input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #d1d9e6; box-sizing:border-box; }
+    .ranges { display:flex; gap:12px; align-items:center; }
+    .modal-backdrop { display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:rgba(0,0,0,0.35); z-index:2000; }
+    .modal { background:#fff; padding:18px; border-radius:10px; max-width:520px; width:90%; box-shadow:0 10px 30px rgba(2,6,23,0.2); }
+    #result { margin-top:14px; font-weight:700; }
+    .chip-enabled { min-height:46px; }
+    #multiCustomRow { display:none; margin-top:10px; }
+    .multi-actions { display:flex; gap:10px; }
   </style>
 </head>
 <body>
-  <!-- Top nav -->
-  <nav style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: linear-gradient(to right, #007cf0, #00dfd8);
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 30px;
-    z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    box-sizing: border-box;
-  ">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span style="font-size: 1.6rem;">🎓</span>
-      <h2 style="margin: 0; font-weight: 700; font-size: 1.4rem;">Welcome to Student Career Predictor</h2>
-    </div>
-
+  <nav style="position:fixed; top:0; left:0; right:0; background:linear-gradient(90deg,#007cf0,#00dfd8); color:#fff; padding:12px 26px; display:flex; justify-content:space-between; align-items:center; z-index:1000;">
+    <div style="display:flex; gap:10px; align-items:center"><span style="font-size:1.4rem">🎓</span><strong>Student Career Predictor</strong></div>
     {% if user %}
-      <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
-        <span style="font-size: 0.95rem;">Welcome, <b>{{ user.username }}</b></span>
-        <a href="{{ url_for('logout') }}"
-           style="background-color: white; color: #007cf0; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: 0.3s; white-space: nowrap;"
-           onmouseover="this.style.backgroundColor='#e3f2ff'"
-           onmouseout="this.style.backgroundColor='white'">
-          Logout
-        </a>
-      </div>
+      <div style="display:flex; gap:12px; align-items:center"><span>Welcome, <b>{{ user.username }}</b></span><a href="{{ url_for('logout') }}" style="background:#fff;color:#007cf0;padding:8px 12px;border-radius:18px;text-decoration:none">Logout</a></div>
     {% endif %}
   </nav>
 
-  <div style="margin-top: 80px;"></div>
+  <div style="height:76px"></div>
 
-  <script src="{{ url_for('static', filename='js/predict_popup.js') }}"></script>
+<div class="page">
+    <form id="careerForm" class="card" autocomplete="off" novalidate>
+      <h2>🎯 Career Prediction Form</h2>
 
-  <div class="page">
-    <form id="careerForm" class="card" autocomplete="off">
-      <h2>🎓 Career Prediction Form</h2>
 
-      <label>Acedamic % in Operating Systems*</label>
-      <input type="number" id="os" min="0" max="100" required>
+      <!-- Required percentage fields (names match server payload keys) -->
+<label for="os">Academic % in Operating Systems*
+    <img src="{{ url_for('static', filename='icons/os.png') }}" class="subject-icon">
+</label>
+      <input id="os" name="Acedamic percentage in Operating Systems" type="number" min="0" max="100" required>
 
-      <label>Percentage in Algorithms*</label>
-      <input type="number" id="algo" min="0" max="100" required>
+<label for="algo">Algorithms (%)
+    <img src="{{ url_for('static', filename='icons/algorithms.png') }}" class="subject-icon">
+</label>
+      <input id="algo" name="percentage in Algorithms" type="number" min="0" max="100" required>
 
-      <label>Programming Concepts (%)*</label>
-      <input type="number" id="prog" min="0" max="100" required>
+<label for="prog">Programming Concepts (%)
+    <img src="{{ url_for('static', filename='icons/coding.jpg') }}" class="subject-icon">
+</label>
+      <input id="prog" name="Percentage in Programming Concepts" type="number" min="0" max="100" required>
 
-      <label>Software Engineering (%)*</label>
-      <input type="number" id="se" min="0" max="100" required>
+<label for="se">Software Engineering (%)
+    <img src="{{ url_for('static', filename='icons/software.png') }}" class="subject-icon">
+</label>
+      <input id="se" name="Percentage in Software Engineering" type="number" min="0" max="100" required>
 
-      <label>Computer Networks (%)*</label>
-      <input type="number" id="net" min="0" max="100" required>
+<label for="net">Computer Networks (%)
+    <img src="{{ url_for('static', filename='icons/Computer.png') }}" class="subject-icon">
+</label>
+      <input id="net" name="Percentage in Computer Networks" type="number" min="0" max="100" required>
 
-      <label>Electronics Subjects (%)*</label>
-      <input type="number" id="elec" min="0" max="100" required>
+<label for="elec">Electronics Subjects (%)
+    <img src="{{ url_for('static', filename='icons/electrons.png') }}" class="subject-icon">
+</label>
+      <input id="elec" name="Percentage in Electronics Subjects" type="number" min="0" max="100" required>
 
-      <label>Computer Architecture (%)*</label>
-      <input type="number" id="arch" min="0" max="100" required>
+<label for="arch">Computer Architecture (%)
+    <img src="{{ url_for('static', filename='icons/com.png') }}" class="subject-icon">
+</label>
+      <input id="arch" name="Percentage in Computer Architecture" type="number" min="0" max="100" required>
 
-      <label>Mathematics (%)*</label>
-      <input type="number" id="math" min="0" max="100" required>
+<label for="math">Mathematics (%)
+    <img src="{{ url_for('static', filename='icons/maths.png') }}" class="subject-icon">
+</label>
+      <input id="math" name="Percentage in Mathematics" type="number" min="0" max="100" required>
 
-      <label>Communication Skills (%)*</label>
-      <input type="number" id="comm" min="0" max="100" required>
+<label for="comm">Communication Skills (%)
+    <img src="{{ url_for('static', filename='icons/comunication.png') }}" class="subject-icon">
+</label>
+      <input id="comm" name="Percentage in Communication skills" type="number" min="0" max="100" required>
 
       <label>Logical Quotient Rating (1–10)</label>
       <div class="ranges">
-        <input type="range" id="logic" min="1" max="10" value="5" oninput="logicOutput.value=this.value">
+        <input type="range" id="logic" name="Logical quotient rating" min="1" max="10" value="5" oninput="logicOutput.value=this.value">
         <output id="logicOutput">5</output>
       </div>
 
-      <label>Hackathons Attended*</label>
-      <input type="number" id="hack" min="0" max="99" required>
+      <label for="hack">Hackathons Attended*</label>
+      <input id="hack" name="hackathons" type="number" min="0" max="9" required>
 
-      <label>Coding Skills Rating (1–10)</label>
+      <label>Programming Skills Rating (1–10)</label>
       <div class="ranges">
-        <input type="range" id="code" min="1" max="10" value="5" oninput="codeOutput.value=this.value">
+        <input type="range" id="code" name="coding skills rating" min="1" max="10" value="5" oninput="codeOutput.value=this.value">
         <output id="codeOutput">5</output>
       </div>
 
-      <label>Public Speaking Points (1–10)</label>
+      <label>Public Speaking (1–10)</label>
       <div class="ranges">
-        <input type="range" id="speak" min="1" max="10" value="5" oninput="speakOutput.value=this.value">
+        <input type="range" id="speak" name="public speaking points" min="1" max="10" value="5" oninput="speakOutput.value=this.value">
         <output id="speakOutput">5</output>
       </div>
 
       <label>Self-Learning Capability?</label>
-      <select id="self">
+      <select id="self" name="self-learning capability?">
         <option value="1">Yes</option>
         <option value="0">No</option>
       </select>
 
       <label>Extra Courses Done?</label>
-      <select id="extra">
+      <select id="extra" name="Extra-courses did">
         <option value="1">Yes</option>
         <option value="0">No</option>
       </select>
 
-      <!-- Certifications (with Other option) -->
+      <!-- multi-selects with "other" option -->
+   <!-- Certifications (with Other option) -->
       <label>Certifications</label>
       <select id="cert" multiple class="chip-enabled">
         <option value="">-- Select Certification --</option>
@@ -177,6 +138,8 @@
         <option value="9">Artificial Intelligence</option>
         <option value="other">Other (enter certificate)</option>
       </select>
+
+
 
       <!-- Workshops -->
       <label>Workshops</label>
@@ -194,6 +157,7 @@
         <option value="other">Other (enter workshop)</option>
       </select>
 
+      <!-- Reading / Writing -->
       <!-- Reading / Writing -->
       <label>Reading/Writing Skills</label>
       <select id="read" multiple class="chip-enabled">
@@ -222,7 +186,9 @@
         <option value="other">Other (enter career area)</option>
       </select>
 
-      <!-- Preferred Company Type -->
+
+
+     <!-- Preferred Company Type -->
       <label>Preferred Company Type</label>
       <select id="company" multiple class="chip-enabled">
         <option value="">-- Select Preferred Company Type --</option>
@@ -237,371 +203,232 @@
         <option value="other">Other (enter company type)</option>
       </select>
 
-      <!-- Reusable custom-entry row (single) -->
+
       <div id="multiCustomRow" aria-hidden="true">
         <input id="multiCustomInput" class="multi-input" type="text" placeholder="Enter custom value...">
         <div class="multi-actions">
           <button type="button" id="multiAddBtn" class="multi-add">Add</button>
           <button type="button" id="multiCancelBtn" class="multi-cancel">Cancel</button>
         </div>
+        <div id="multiHint">Tip: type value then press Add (or Enter)</div>
       </div>
-      <div id="multiHint">Tip: type the value then press Add (or press Enter).</div>
 
       <label>Worked in Teams Before?</label>
-      <select id="team">
+      <select id="team" name="worked in teams ever?">
         <option value="1">Yes</option>
         <option value="0">No</option>
       </select>
 
-      <button id="predictBtn" type="submit">Predict Career</button>
-      <div id="result"></div>
+      <div style="display:flex; gap:12px; margin-top:16px;">
+        <button id="predictBtn" type="submit" style="flex:1; padding:12px 16px; border-radius:10px; border:none; background:linear-gradient(90deg,#007cf0,#00dfd8); color:#fff; font-weight:700">Predict Career</button>
+        <button id="resetBtn" type="reset" style="flex:0 0 120px; padding:12px; border-radius:10px; border:1px solid #d1d9e6; background:#fff">Reset</button>
+      </div>
+
+      <div id="result" role="status" aria-live="polite"></div>
     </form>
   </div>
 
-  <!-- Eligibility modal -->
   <div id="eligModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal" role="dialog" aria-labelledby="eligTitle">
-      <h3 id="eligTitle">Not eligible</h3>
+      <h3 id="eligTitle">Input error</h3>
       <p id="eligMsg"></p>
-      <button id="eligClose">OK</button>
+      <div style="text-align:right"><button id="eligClose">OK</button></div>
     </div>
   </div>
 
+  <!-- single compact script: handles validation, multi-other, and submission -->
   <script>
-    /* ----- form validation & submit (kept from your original) ----- */
-    const requiredPercentIds = ['os','algo','prog','se','net','elec','arch','math','comm'];
-    const predictBtn = document.getElementById('predictBtn');
-    const eligibilityModal = document.getElementById('eligModal');
-    const eligClose = document.getElementById('eligClose');
-    const eligMsg = document.getElementById('eligMsg');
+  (function(){
+    // --- Element refs ---
     const careerForm = document.getElementById('careerForm');
+    const predictBtn = document.getElementById('predictBtn');
+    const resultEl = document.getElementById('result');
+    const eligModal = document.getElementById('eligModal');
+    const eligMsg = document.getElementById('eligMsg');
+    const eligClose = document.getElementById('eligClose');
 
-    function rawVal(id) { return document.getElementById(id).value.trim(); }
-    function numVal(id) { const v = rawVal(id); return v === "" ? NaN : Number(v); }
+    const percentIds = ['os','algo','prog','se','net','elec','arch','math','comm'];
 
-    function showIneligibleModal(badFields) {
-      const parts = badFields.map(f => {
-        const v = rawVal(f) || "empty";
-        const labelMap = { os:"OS", algo:"Algorithms", prog:"Programming Concepts", se:"Software Engineering", net:"Computer Networks", elec:"Electronics", arch:"Computer Architecture", math:"Mathematics", comm:"Communication Skills" };
-        return ${labelMap[f] || f}: ${v}%;
-      });
-        eligMsg.textContent = The following field(s) are below the minimum required (35%): ${parts.join(', ')}. Please correct them to continue.;
-      eligibilityModal.style.display = 'flex';
-      eligibilityModal.setAttribute('aria-hidden','false');
-    }
+    function showModal(msg){ eligMsg.textContent = msg; eligModal.style.display='flex'; eligModal.setAttribute('aria-hidden','false'); }
+    function hideModal(){ eligModal.style.display='none'; eligModal.setAttribute('aria-hidden','true'); }
+    eligClose.addEventListener('click', hideModal);
+    eligModal.addEventListener('click', (ev)=>{ if(ev.target===eligModal) hideModal(); });
 
-    function closeEligibilityModal() { eligibilityModal.style.display = 'none'; eligibilityModal.setAttribute('aria-hidden','true'); }
-
-    eligClose.addEventListener('click', closeEligibilityModal);
-    eligibilityModal.addEventListener('click', (ev) => { if (ev.target === eligibilityModal) closeEligibilityModal(); });
-
-    requiredPercentIds.forEach(id => {
+    // clamp percent inputs to [0,100]
+    percentIds.forEach(id=>{
       const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('blur', () => {
-        const raw = rawVal(id);
-        if (raw === "") return;
-        const nv = Number(raw);
-        if (!isFinite(nv)) return;
-        if (nv < 35) {
-          showIneligibleModal([id]);
-        }
+      if(!el) return;
+      el.addEventListener('input', ()=>{
+        const v = Number(el.value);
+        if(!isFinite(v)) return;
+        if(v>100) { el.value = 100; showModal('Value must be ≤ 100%'); }
+        if(v<0) { el.value = 0; }
       });
     });
 
-    /*
-    careerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const bad = [];
-      for (let i = 0; i < requiredPercentIds.length; i++) {
-        const id = requiredPercentIds[i];
-        const raw = rawVal(id);
-        if (raw === "") { bad.push(id); continue; }
-        const nv = Number(raw);
-        if (!isFinite(nv) || nv < 35) { bad.push(id); }
+    // hackathon limit
+    const hackEl = document.getElementById('hack');
+    if(hackEl){
+      hackEl.addEventListener('input', ()=>{
+        const v = Number(hackEl.value || 0);
+        if(!isFinite(v)) return;
+        if(v>9){ hackEl.value = 9; showModal('Hackathons must be 0–9'); }
+        if(v<0) hackEl.value = 0;
+      });
+    }
+
+    // --- Multi-select "Other" handler (re-usable) ---
+    (function setupMulti(){
+      const selects = ['cert','work','career','company'];
+      const multiRow = document.getElementById('multiCustomRow');
+      const input = document.getElementById('multiCustomInput');
+      const addBtn = document.getElementById('multiAddBtn');
+      const cancelBtn = document.getElementById('multiCancelBtn');
+      const hint = document.getElementById('multiHint');
+      let activeSelect = null;
+
+      function showFor(sel){ activeSelect = sel; sel.parentNode.insertBefore(multiRow, sel.nextSibling); multiRow.style.display='block'; multiRow.setAttribute('aria-hidden','false'); input.value=''; input.focus(); }
+      function hide(){ if(multiRow.parentNode) multiRow.parentNode.removeChild(multiRow); multiRow.style.display='none'; activeSelect=null; }
+
+      function onChange(e){
+        const sel = e.target;
+        const hasOther = Array.from(sel.selectedOptions).some(o=>o.value==='other');
+        if(hasOther) showFor(sel); else if(activeSelect===sel) hide();
       }
 
-      // Block if any field > 100
-      const tooHigh = hasOverLimit();
-      if (tooHigh.length > 0) {
-        eligMsg.textContent = "Some values are above 100%. Please correct them.";
-        eligibilityModal.style.display = "flex";
-        eligibilityModal.setAttribute("aria-hidden", "false");
-        return; // stop form
-      }
+      selects.forEach(id=>{ const el = document.getElementById(id); if(!el) return; el.addEventListener('change', onChange); });
 
-      if (bad.length > 0) { showIneligibleModal(bad); return; }
+      addBtn.addEventListener('click', ()=>{
+        const text = (input.value||'').trim(); if(!text || !activeSelect) return;
+        // dedupe by text
+        const sel = activeSelect;
+        const existing = Array.from(sel.options).find(o=>o.textContent.trim().toLowerCase()===text.toLowerCase());
+        if(existing){ existing.selected = true; }
+        else{
+          const opt = document.createElement('option'); opt.value = 'custom-'+Date.now(); opt.textContent = text; opt.selected = true;
+          if(sel.options.length>0) sel.insertBefore(opt, sel.options[0]); else sel.add(opt);
+        }
+        // deselect 'other'
+        Array.from(sel.options).forEach(o=>{ if(o.value==='other') o.selected=false; });
+        sel.dispatchEvent(new Event('change', {bubbles:true}));
+        hide();
+      });
 
-      predictBtn.disabled = true;
-      const payload = {
-        "Acedamic percentage in Operating Systems": numVal('os') || 0,
-        "percentage in Algorithms": numVal('algo') || 0,
-        "Percentage in Programming Concepts": numVal('prog') || 0,
-        "Percentage in Software Engineering": numVal('se') || 0,
-        "Percentage in Computer Networks": numVal('net') || 0,
-        "Percentage in Electronics Subjects": numVal('elec') || 0,
-        "Percentage in Computer Architecture": numVal('arch') || 0,
-        "Percentage in Mathematics": numVal('math') || 0,
-        "Percentage in Communication skills": numVal('comm') || 0,
-        "Logical quotient rating": Number(document.getElementById('logic').value || 0),
-        "hackathons": Number(document.getElementById('hack').value || 0),
-        "coding skills rating": Number(document.getElementById('code').value || 0),
-        "public speaking points": Number(document.getElementById('speak').value || 0),
-        "self-learning capability?": Number(document.getElementById('self').value || 0),
-        "Extra-courses did": Number(document.getElementById('extra').value || 0),
-        "certifications": Number(document.getElementById('cert').value || 0),
-        "workshops": Number(document.getElementById('work').value || 0),
-        "reading and writing skills": Number(document.getElementById('read').value || 0),
-        "interested career area": Number(document.getElementById('career').value || 0),
-        "Type of company want to settle in?": Number(document.getElementById('company').value || 0),
-        "worked in teams ever?": Number(document.getElementById('team').value || 0)
-      };
+      cancelBtn.addEventListener('click', ()=>{ if(!activeSelect) return; Array.from(activeSelect.options).forEach(o=>{ if(o.value==='other') o.selected=false; }); activeSelect.dispatchEvent(new Event('change',{bubbles:true})); hide(); });
 
-      const resultEl = document.getElementById('result');
-      resultEl.textContent = "Predicting...";
+      input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); addBtn.click(); } else if(e.key==='Escape'){ e.preventDefault(); cancelBtn.click(); } });
 
-      try {
-        const res = await fetch("/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        if (json && json.predicted_job_role) {
-          resultEl.innerHTML = 🎯 Predicted Career Role: <b>${json.predicted_job_role}</b>;
-        } else {
+    })();
 
+    // --- form submit handler (single source of truth) ---
+careerForm.addEventListener('submit', async function(e){
+  e.preventDefault(); // prevent refresh
+  resultEl.textContent = '';
+
+  const percentIds = ['os','algo','prog','se','net','elec','arch','math','comm'];
+
+ // SIMPLE ELIGIBILITY CHECK — SHOW ONLY ONE POPUP
+// SIMPLE ELIGIBILITY CHECK — SHOW ONLY ONE POPUP
+let eligible = true;
+
+percentIds.forEach(id => {
+  const raw = document.getElementById(id).value.trim();
+  const v = Number(raw);
+
+  // Allow empty (JS will catch later) BUT validate correctly
+  if (!raw || !isFinite(v)) return;
+
+  if (v < 35) eligible = false;
+});
+
+if (!eligible) {
+  showModal("You cannot continue because one or more marks are below 35%. Please correct them and try again.");
+  return;
+}
+
+
+  // FIXED: Multi-select → count of selected items (integer)
+  const certCount = document.getElementById('cert').selectedOptions.length;
+  const workCount = document.getElementById('work').selectedOptions.length;
+  const readCount = document.getElementById('read') ? document.getElementById('read').selectedOptions.length : 0;
+  const careerCount = document.getElementById('career').selectedOptions.length;
+  const companyCount = document.getElementById('company').selectedOptions.length;
+
+  // Build clean numerical payload
+  const payload = {
+    "Acedamic percentage in Operating Systems": Number(document.getElementById('os').value || 0),
+    "percentage in Algorithms": Number(document.getElementById('algo').value || 0),
+    "Percentage in Programming Concepts": Number(document.getElementById('prog').value || 0),
+    "Percentage in Software Engineering": Number(document.getElementById('se').value || 0),
+    "Percentage in Computer Networks": Number(document.getElementById('net').value || 0),
+    "Percentage in Electronics Subjects": Number(document.getElementById('elec').value || 0),
+    "Percentage in Computer Architecture": Number(document.getElementById('arch').value || 0),
+    "Percentage in Mathematics": Number(document.getElementById('math').value || 0),
+    "Percentage in Communication skills": Number(document.getElementById('comm').value || 0),
+
+    "Logical quotient rating": Number(document.getElementById('logic').value || 0),
+    "hackathons": Number(document.getElementById('hack').value || 0),
+    "coding skills rating": Number(document.getElementById('code').value || 0),
+    "public speaking points": Number(document.getElementById('speak').value || 0),
+
+    "self-learning capability?": Number(document.getElementById('self').value || 0),
+    "Extra-courses did": Number(document.getElementById('extra').value || 0),
+
+    // FIXED: converted lists → numeric counts
+    "certifications": certCount,
+    "workshops": workCount,
+    "reading and writing skills": readCount,
+    "interested career area": careerCount,
+    "Type of company want to settle in?": companyCount,
+
+    "worked in teams ever?": Number(document.getElementById('team').value || 0)
+  };
+
+  // UI feedback
+  predictBtn.disabled = true;
+  predictBtn.textContent = 'Predicting...';
+  resultEl.textContent = 'Predicting...';
+
+  // Send request
+  try{
+    const res = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+
+if(!res.ok){
+  resultEl.textContent = 'Server error: ' + (json.error || res.status);
+} else {
+  if(json.predicted_job_role){
+    // 🔥 FIXED — NO CONFIDENCE SHOWN
+    resultEl.innerHTML = `🎯 Predicted Career Role: <b>${json.predicted_job_role}</b>`;
+  } else if(json.error){
+    resultEl.innerHTML = '⚠ Error: ' + json.error;
+  } else {
+    resultEl.innerHTML = '⚠ Unexpected server response.';
+  }
+}
+
+  } catch(err){
+    console.error(err);
+    resultEl.textContent = '⚠ Cannot connect to backend.';
+  } finally {
+    predictBtn.disabled = false;
+    predictBtn.textContent = 'Predict Career';
+  }
+});
+
+    // set range outputs
     document.getElementById('logicOutput').value = document.getElementById('logic').value;
     document.getElementById('codeOutput').value = document.getElementById('code').value;
     document.getElementById('speakOutput').value = document.getElementById('speak').value;
 
-    /* LIMIT CHECKS */
-    const percentFields = ['os','algo','prog','se','net','elec','arch','math','comm'];
-    function checkMaxLimit(id) {
-      const el = document.getElementById(id);
-      el.addEventListener("input", () => {
-        let val = Number(el.value);
-        if (val > 100) {
-          el.value = 100;
-          eligMsg.textContent = Value must be below 100%. You entered ${val}.;
-          eligibilityModal.style.display = "flex";
-          eligibilityModal.setAttribute("aria-hidden", "false");
-        }
-      });
-    }
-    percentFields.forEach(id => checkMaxLimit(id));
-    function hasOverLimit() {
-      let bad = [];
-      percentFields.forEach(id => {
-        const v = Number(document.getElementById(id).value || 0);
-        if (v > 100) bad.push(id);
-      });
-      return bad;
-    }
+  })();
   </script>
-  <script>
-/* Hackathon limit: must be below 9 (i.e. 0..9 allowed).
-   Place this after your percentFields / hasOverLimit logic. */
-(function enforceHackLimit() {
-  const hackEl = document.getElementById('hack');
-  if (!hackEl) return;
+<script src="{{ url_for('static', filename='js/chip_select.js') }}"></script>
 
-  // Show modal helper (re-uses your eligMsg and eligibilityModal)
-  function showHackModal() {
-    eligMsg.textContent = "Please enter a value below 9 (not above 9).";
-    eligibilityModal.style.display = "flex";
-    eligibilityModal.setAttribute("aria-hidden", "false");
-  }
-
-  // On input: if user types >9, clamp and show message
-  hackEl.addEventListener('input', () => {
-    const v = Number(hackEl.value || 0);
-    if (!isFinite(v)) return;
-    if (v > 9) {
-      // optional: clamp so the field stays valid
-      hackEl.value = 9;
-      showHackModal();
-    } else if (v < 0) {
-      // prevent negative numbers
-      hackEl.value = 0;
-    }
-  });
-
-  // On blur: final check
-  hackEl.addEventListener('blur', () => {
-    const v = Number(hackEl.value || 0);
-    if (!isFinite(v)) return;
-    if (v > 9) showHackModal();
-  });
-
-  // Also block submit (extra safety)
-  careerForm.addEventListener('submit', (e) => {
-    const v = Number(hackEl.value || 0);
-    if (v > 9) {
-      e.preventDefault();
-      showHackModal();
-      // keep predict button enabled/disabled state as appropriate
-      predictBtn.disabled = false;
-      return false;
-    }
-  });
-})();
-</script>
-
-
-  <!-- Reusable multi-select "Other -> Add" handler -->
-<script>
-(function setupMultiCustom() {
-  const selects = ['cert','work','career','company'];
-  const multiRow = document.getElementById('multiCustomRow');
-  const input = document.getElementById('multiCustomInput');
-  const addBtn = document.getElementById('multiAddBtn');
-  const cancelBtn = document.getElementById('multiCancelBtn');
-  const hint = document.getElementById('multiHint');
-
-  let activeSelectId = null;
-  let originalParent = multiRow.parentNode; // keep reference to original place
-
-  // Helper to insert node after a reference node
-  function insertAfter(newNode, referenceNode) {
-    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
-  }
-
-  function showRowFor(selectEl) {
-    activeSelectId = selectEl.id;
-
-    // move multiRow & hint right after the active select so they appear under it
-    insertAfter(multiRow, selectEl);
-    insertAfter(hint, multiRow);
-
-    multiRow.style.display = 'block';
-    multiRow.setAttribute('aria-hidden','false');
-    hint.style.display = 'block';
-    input.value = '';
-    input.focus();
-  }
-
-  function hideRow() {
-    // move back to original place (optional). We'll hide instead of permanently moving.
-    // If you prefer the row remain where last used, remove the next line.
-    if (originalParent && originalParent !== multiRow.parentNode) {
-      originalParent.appendChild(multiRow);
-      originalParent.appendChild(hint);
-    }
-
-    activeSelectId = null;
-    multiRow.style.display = 'none';
-    multiRow.setAttribute('aria-hidden','true');
-    hint.style.display = 'none';
-    input.value = '';
-  }
-
-  function onSelectChange(e) {
-    const sel = e.target;
-    const hasOther = Array.from(sel.selectedOptions).some(o => o.value === 'other');
-    if (hasOther) {
-      showRowFor(sel);
-    } else {
-      if (activeSelectId === sel.id) hideRow();
-    }
-  }
-
-  function scrollOptionIntoView(sel, optIndex) {
-    try {
-      const option = sel.options[optIndex];
-      if (!option) return;
-      const top = option.offsetTop;
-      sel.scrollTop = Math.max(0, top - (sel.clientHeight / 3));
-    } catch (err) { /* ignore */ }
-  }
-
-  function addCustom() {
-    const text = (input.value || '').trim();
-    if (!text || !activeSelectId) return;
-    const sel = document.getElementById(activeSelectId);
-
-    // dedupe by visible text (case-insensitive)
-    const existing = Array.from(sel.options).find(o => o.textContent.trim().toLowerCase() === text.toLowerCase());
-    let newIndex = -1;
-
-    if (existing) {
-      existing.selected = true;
-      newIndex = Array.prototype.indexOf.call(sel.options, existing);
-    } else {
-      const val = 'custom-' + Date.now();
-      const opt = document.createElement('option');
-      opt.value = val;
-      opt.textContent = text;
-      opt.selected = true;
-
-      // Insert BEFORE option at index 1 (so it becomes index 1)
-      if (sel.options.length > 1) {
-        sel.insertBefore(opt, sel.options[1]);
-        newIndex = 1;
-      } else {
-        sel.add(opt);
-        newIndex = sel.options.length - 1;
-      }
-    }
-
-    // deselect 'other'
-    Array.from(sel.options).forEach(o => { if (o.value === 'other') o.selected = false; });
-
-    // ensure newly inserted option is selected and visible
-    if (newIndex >= 0) {
-      try { sel.selectedIndex = newIndex; } catch (e) {}
-      scrollOptionIntoView(sel, newIndex);
-    }
-
-    // notify change so chip_select.js updates chips
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-
-    hideRow();
-  }
-
-  function cancelCustom() {
-    if (!activeSelectId) { hideRow(); return; }
-    const sel = document.getElementById(activeSelectId);
-    Array.from(sel.options).forEach(o => { if (o.value === 'other') o.selected = false; });
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-    hideRow();
-  }
-
-  // attach listeners to each target select
-  selects.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('change', onSelectChange);
-  });
-
-  addBtn.addEventListener('click', addCustom);
-  cancelBtn.addEventListener('click', cancelCustom);
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addCustom(); }
-    else if (e.key === 'Escape') { e.preventDefault(); cancelCustom(); }
-  });
-
-  // init: if any select already has 'other' selected, show the row for first found
-  for (const id of selects) {
-    const el = document.getElementById(id);
-    if (!el) continue;
-    if (Array.from(el.selectedOptions).some(o => o.value === 'other')) {
-      showRowFor(el);
-      break;
-    }
-  }
-})();
-</script>
-
-
-  <!-- existing chip_select.js must come after the DOM scripts -->
-  <script src="{{ url_for('static', filename='js/chip_select.js') }}"></script>
-
-  <!-- popup helper -->
-  <script src="{{ url_for('static', filename='js/predict_popup.js') }}"></script>
 </body>
 </html>
-
-
-
